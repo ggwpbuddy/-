@@ -384,6 +384,12 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:none;border-ra
 <script src="game-roles.js"></script>
 </head>
 <body>
+<div id="boot" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:#070709;z-index:9999">
+  <div style="font-family:'VT323',monospace;font-size:30px;letter-spacing:.12em;color:#F4F2F8;text-shadow:0 0 16px rgba(255,61,127,.5)">ГГВП</div>
+  <div style="width:54px;height:54px;border-radius:50%;border:4px solid #22222c;border-top-color:#FF3D7F;border-right-color:#7C6CFF;animation:bootspin .9s linear infinite"></div>
+  <div style="font-family:'VT323',monospace;font-size:15px;color:#5f5f76;letter-spacing:.1em">загружаем катку...</div>
+</div>
+<style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
 const {useState,useEffect,useRef,useCallback}=React;
@@ -435,15 +441,28 @@ const ls = {
 };
 async function initBackend(){
   if(!sb) return;
-  const { data, error } = await sb.from('kv').select('key,value');
-  if(error){ console.warn('initBackend',error.message); }
-  else { (data||[]).forEach(row=>cache.set(row.key,row.value)); }
-  sb.channel('kv-rt').on('postgres_changes',{event:'*',schema:'public',table:'kv'},payload=>{
-    const row=payload.new||payload.old; if(!row||!row.key) return;
-    if(payload.eventType==='DELETE') cache.delete(row.key); else cache.set(row.key,row.value);
-    notifyChange();
-  }).subscribe();
+  await refreshFromDB();           // первая загрузка данных из базы
+  // realtime — мгновенные обновления (если канал доступен)
+  try{
+    sb.channel('kv-rt').on('postgres_changes',{event:'*',schema:'public',table:'kv'},payload=>{
+      const row=payload.new||payload.old; if(!row||!row.key) return;
+      if(payload.eventType==='DELETE') cache.delete(row.key); else cache.set(row.key,row.value);
+      notifyChange();
+    }).subscribe();
+  }catch(e){ console.warn('realtime off',e&&e.message); }
   notifyChange();
+}
+// перечитываем ВСЮ базу в кэш — с таймаутом, чтобы запрос никогда не висел вечно
+async function refreshFromDB(){
+  if(!sb) return;
+  try{
+    const q = sb.from('kv').select('key,value');
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
+    const { data, error } = await Promise.race([q, timeout]);
+    if(error){ console.warn('refreshFromDB',error.message); return; }
+    (data||[]).forEach(row=>cache.set(row.key,row.value));
+    notifyChange();
+  }catch(e){ console.warn('refreshFromDB',e&&e.message); }
 }
 
 /* ── HELPERS ── */
@@ -1195,7 +1214,7 @@ function FindScreen({me,users,chats,setChats,goChat}){
               <circle cx='76' cy='77' r='3.5' fill='#FFD66B'/>
               <rect x='28' y='49' width='96' height='4' rx='2' fill='#15151c'/>
               <rect x='28' y='49' width={`${(10-left)/10*96}`} height='4' rx='2' fill='url(#cg)'/>
-              {[[44,90],[66,90],[88,90],[44,106],[66,106],[88,106]].map(([x,y],i)=><rect key={i} x={x} y={y} width='10' height='10' rx='2' fill='#16161e' stroke='#34343f' strokeWidth='1'/>)}
+              {[[55,90],[71,90],[87,90],[55,106],[71,106],[87,106]].map(([x,y],i)=><rect key={i} x={x} y={y} width='10' height='10' rx='2' fill='#16161e' stroke='#34343f' strokeWidth='1'/>)}
               <line x1='16' y1='79' x2='136' y2='79' stroke='url(#cg)' strokeWidth='1.5' opacity='.5'/>
             </svg>
             {left>0&&<div className='lootbox-tap'><Icon n='box' style={{fontSize:15}}/> нажми, чтобы открыть</div>}
@@ -1460,12 +1479,13 @@ function App(){
     if(!me||auth!=='app')return;
     pingOnline(me.id);
     pingRef.current=setInterval(()=>pingOnline(me.id),28000);
-    pollRef.current=setInterval(()=>{
+    pollRef.current=setInterval(async ()=>{
+      await refreshFromDB();   // подтянуть свежие данные из базы (новые анкеты, лайки, сообщения)
       setChats(ls.get('gv:ch:'+me.id)||[]);
       setNotifs(ls.get('gv:no:'+me.id)||[]);
       setListings((ls.get('gv:li')||[]).filter(l=>l.status==='active'&&l.expiresAt>now()));
       refreshUsers(me);
-    },6000);
+    },5000);
     return()=>{clearInterval(pingRef.current);clearInterval(pollRef.current)};
   },[me?.id,auth]);
 
@@ -1625,6 +1645,11 @@ function App(){
 try{ if(window.vkBridge&&window.vkBridge.send){ window.vkBridge.send('VKWebAppInit',{}); } }catch(e){}
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+// убрать загрузочный экран, когда приложение смонтировалось
+function hideBoot(){ const b=document.getElementById('boot'); if(b){ b.style.transition='opacity .3s'; b.style.opacity='0'; setTimeout(()=>b.remove(),320); } }
+requestAnimationFrame(()=>setTimeout(hideBoot,80));
+// страховка: в любом случае спрятать через 12 сек, даже если что-то пошло не так
+setTimeout(hideBoot,12000);
 </script>
 </body>
 </html>

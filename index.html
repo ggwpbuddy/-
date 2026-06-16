@@ -447,8 +447,7 @@ const ls = {
         cache.set(k, v);
         notifyChange();
         if (sb)
-            sb.from('kv').upsert({ key: k, value: v, updated_at: new Date().toISOString() }).then(({ error }) => { if (error)
-                console.warn('sb set', k, error.message); });
+            writeKV(k, v);
     },
     del(k) {
         if (isLocalKey(k)) {
@@ -459,13 +458,33 @@ const ls = {
         notifyChange();
         if (sb)
             sb.from('kv').delete().eq('key', k).then(({ error }) => { if (error)
-                console.warn('sb del', k, error.message); });
+                console.warn('sb del', k, error.message); }).catch(e => console.warn('sb del throw', k, e && e.message));
     },
     list(p) { const r = []; for (const k of cache.keys()) {
         if (k.startsWith(p))
             r.push(k);
     } return r; }
 };
+// надёжная запись в Supabase: ловим и ошибки, и исключения, с одной повторной попыткой
+async function writeKV(k, v, attempt) {
+    attempt = attempt || 1;
+    try {
+        const { error } = await sb.from('kv').upsert({ key: k, value: v, updated_at: new Date().toISOString() });
+        if (error) {
+            console.warn('[KV WRITE FAIL]', k, '→', error.message, error.details || '', error.hint || '');
+            if (attempt < 2)
+                setTimeout(() => writeKV(k, v, attempt + 1), 1200);
+        }
+        else {
+            console.log('[KV OK]', k);
+        }
+    }
+    catch (e) {
+        console.warn('[KV WRITE THREW]', k, '→', e && e.message);
+        if (attempt < 2)
+            setTimeout(() => writeKV(k, v, attempt + 1), 1200);
+    }
+}
 async function initBackend() {
     if (!sb)
         return;

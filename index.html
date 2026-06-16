@@ -7,7 +7,6 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -391,1265 +390,1411 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:none;border-ra
 </div>
 <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
 <div id="root"></div>
-<script type="text/babel" data-presets="react">
-const {useState,useEffect,useRef,useCallback}=React;
-
+<script>
+"use strict";
+const { useState, useEffect, useRef, useCallback } = React;
 /* ── GAME ROLES (inline fallback if game-roles.js not loaded) ── */
 const GAME_ROLES_DATA = (typeof GAME_ROLES !== 'undefined') ? GAME_ROLES : {
-  "Valorant":["Duelist","Sentinel","Controller","Initiator","IGL (капитан)","Entry Fragger","Support","Lurker"],
-  "CS2":["Entry Fragger","AWPer","Rifler","IGL (капитан)","Support","Lurker","Secondary AWP","Clutcher"],
-  "Dota 2":["Pos 1 (Carry)","Pos 2 (Мид)","Pos 3 (Оффлейн)","Pos 4 (Поддержка)","Pos 5 (Хард Саппорт)","Ganker","Initiator","Pusher"],
-  "League of Legends":["Top (Топ)","Jungle (Лес)","Mid (Мид)","ADC (Бот)","Support (Саппорт)","Flex","Tank","AP Carry"],
-  "Apex Legends":["Fragger (Убийца)","Support (Поддержка)","Scout (Разведчик)","IGL (Лидер)","Wraith Main","Lifeline Main","Pathfinder Main","Horizon Main"],
-  "Overwatch 2":["Tank","DPS (Damage)","Support (Healer)","Flex","Tracer Main","Reinhardt Main","Ana Main","Lucio Main"],
-  "Fortnite":["Fragger","Builder (Строитель)","IGL (Лидер)","Support","Sniper","Rusher"],
-  "PUBG":["Fragger","Sniper","Driver (Водитель)","Fragger / Entry","Support","IGL (Лидер)"],
-  "Rust":["Raider (Рейдер)","Builder (Строитель)","Farmer (Фармер)","PVP Fighter","Scout (Разведчик)","Crafter (Крафтер)"],
-  "Minecraft":["Builder (Строитель)","Redstoner","PVP Fighter","Farmer (Фармер)","Explorer (Исследователь)","Admin / Организатор"],
+    "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "IGL (капитан)", "Entry Fragger", "Support", "Lurker"],
+    "CS2": ["Entry Fragger", "AWPer", "Rifler", "IGL (капитан)", "Support", "Lurker", "Secondary AWP", "Clutcher"],
+    "Dota 2": ["Pos 1 (Carry)", "Pos 2 (Мид)", "Pos 3 (Оффлейн)", "Pos 4 (Поддержка)", "Pos 5 (Хард Саппорт)", "Ganker", "Initiator", "Pusher"],
+    "League of Legends": ["Top (Топ)", "Jungle (Лес)", "Mid (Мид)", "ADC (Бот)", "Support (Саппорт)", "Flex", "Tank", "AP Carry"],
+    "Apex Legends": ["Fragger (Убийца)", "Support (Поддержка)", "Scout (Разведчик)", "IGL (Лидер)", "Wraith Main", "Lifeline Main", "Pathfinder Main", "Horizon Main"],
+    "Overwatch 2": ["Tank", "DPS (Damage)", "Support (Healer)", "Flex", "Tracer Main", "Reinhardt Main", "Ana Main", "Lucio Main"],
+    "Fortnite": ["Fragger", "Builder (Строитель)", "IGL (Лидер)", "Support", "Sniper", "Rusher"],
+    "PUBG": ["Fragger", "Sniper", "Driver (Водитель)", "Fragger / Entry", "Support", "IGL (Лидер)"],
+    "Rust": ["Raider (Рейдер)", "Builder (Строитель)", "Farmer (Фармер)", "PVP Fighter", "Scout (Разведчик)", "Crafter (Крафтер)"],
+    "Minecraft": ["Builder (Строитель)", "Redstoner", "PVP Fighter", "Farmer (Фармер)", "Explorer (Исследователь)", "Admin / Организатор"],
 };
-const GAMES=Object.keys(GAME_ROLES_DATA);
-
+const GAMES = Object.keys(GAME_ROLES_DATA);
 /* ── STORAGE ── */
 /* ════ БЭКЕНД: данные в Supabase (общие, realtime). Настройка — в КАК_ЗАПУСТИТЬ.md. ════ */
 const SUPABASE_URL = 'https://kiicfzxhcmkoiqwjmisw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpaWNmenhoY21rb2lxd2ptaXN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTI4NzEsImV4cCI6MjA5NjU2ODg3MX0.juLdhHBKpYKOIUrJmxoP-4a2vhtY9T_zN0qeG5OveuI';
-const CONFIGURED = !/ВСТАВЬ_СЮДА/.test(SUPABASE_URL+SUPABASE_ANON_KEY);
+const CONFIGURED = !/ВСТАВЬ_СЮДА/.test(SUPABASE_URL + SUPABASE_ANON_KEY);
 const sb = CONFIGURED ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-const LOCAL_KEYS = ['gv:me','gv:tut:seen'];
+const LOCAL_KEYS = ['gv:me', 'gv:tut:seen'];
 const isLocalKey = k => LOCAL_KEYS.includes(k);
 const localLS = {
-  get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}},
-  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}},
-  del(k){try{localStorage.removeItem(k)}catch{}},
+    get(k) { try {
+        const v = localStorage.getItem(k);
+        return v ? JSON.parse(v) : null;
+    }
+    catch (_a) {
+        return null;
+    } },
+    set(k, v) { try {
+        localStorage.setItem(k, JSON.stringify(v));
+    }
+    catch (_a) { } },
+    del(k) { try {
+        localStorage.removeItem(k);
+    }
+    catch (_a) { } },
 };
 const cache = new Map();
 let onCacheChange = null;
-const notifyChange = ()=>{ if(onCacheChange) onCacheChange(); };
+const notifyChange = () => { if (onCacheChange)
+    onCacheChange(); };
 const ls = {
-  get(k){ if(isLocalKey(k)) return localLS.get(k); return cache.has(k)?cache.get(k):null; },
-  set(k,v){
-    if(isLocalKey(k)){ localLS.set(k,v); return; }
-    cache.set(k,v); notifyChange();
-    if(sb) sb.from('kv').upsert({key:k,value:v,updated_at:new Date().toISOString()}).then(({error})=>{ if(error) console.warn('sb set',k,error.message); });
-  },
-  del(k){
-    if(isLocalKey(k)){ localLS.del(k); return; }
-    cache.delete(k); notifyChange();
-    if(sb) sb.from('kv').delete().eq('key',k).then(({error})=>{ if(error) console.warn('sb del',k,error.message); });
-  },
-  list(p){ const r=[]; for(const k of cache.keys()){ if(k.startsWith(p)) r.push(k); } return r; }
+    get(k) { if (isLocalKey(k))
+        return localLS.get(k); return cache.has(k) ? cache.get(k) : null; },
+    set(k, v) {
+        if (isLocalKey(k)) {
+            localLS.set(k, v);
+            return;
+        }
+        cache.set(k, v);
+        notifyChange();
+        if (sb)
+            sb.from('kv').upsert({ key: k, value: v, updated_at: new Date().toISOString() }).then(({ error }) => { if (error)
+                console.warn('sb set', k, error.message); });
+    },
+    del(k) {
+        if (isLocalKey(k)) {
+            localLS.del(k);
+            return;
+        }
+        cache.delete(k);
+        notifyChange();
+        if (sb)
+            sb.from('kv').delete().eq('key', k).then(({ error }) => { if (error)
+                console.warn('sb del', k, error.message); });
+    },
+    list(p) { const r = []; for (const k of cache.keys()) {
+        if (k.startsWith(p))
+            r.push(k);
+    } return r; }
 };
-async function initBackend(){
-  if(!sb) return;
-  await refreshFromDB();           // первая загрузка данных из базы
-  // realtime — мгновенные обновления (если канал доступен)
-  try{
-    sb.channel('kv-rt').on('postgres_changes',{event:'*',schema:'public',table:'kv'},payload=>{
-      const row=payload.new||payload.old; if(!row||!row.key) return;
-      if(payload.eventType==='DELETE') cache.delete(row.key); else cache.set(row.key,row.value);
-      notifyChange();
-    }).subscribe();
-  }catch(e){ console.warn('realtime off',e&&e.message); }
-  notifyChange();
+async function initBackend() {
+    if (!sb)
+        return;
+    await refreshFromDB(); // первая загрузка данных из базы
+    // realtime — мгновенные обновления (если канал доступен)
+    try {
+        sb.channel('kv-rt').on('postgres_changes', { event: '*', schema: 'public', table: 'kv' }, payload => {
+            const row = payload.new || payload.old;
+            if (!row || !row.key)
+                return;
+            if (payload.eventType === 'DELETE')
+                cache.delete(row.key);
+            else
+                cache.set(row.key, row.value);
+            notifyChange();
+        }).subscribe();
+    }
+    catch (e) {
+        console.warn('realtime off', e && e.message);
+    }
+    notifyChange();
 }
 // перечитываем ВСЮ базу в кэш — с таймаутом, чтобы запрос никогда не висел вечно
-async function refreshFromDB(){
-  if(!sb) return;
-  try{
-    const q = sb.from('kv').select('key,value');
-    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
-    const { data, error } = await Promise.race([q, timeout]);
-    if(error){ console.warn('refreshFromDB',error.message); return; }
-    (data||[]).forEach(row=>cache.set(row.key,row.value));
-    notifyChange();
-  }catch(e){ console.warn('refreshFromDB',e&&e.message); }
+async function refreshFromDB() {
+    if (!sb)
+        return;
+    try {
+        const q = sb.from('kv').select('key,value');
+        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000));
+        const { data, error } = await Promise.race([q, timeout]);
+        if (error) {
+            console.warn('refreshFromDB', error.message);
+            return;
+        }
+        (data || []).forEach(row => cache.set(row.key, row.value));
+        notifyChange();
+    }
+    catch (e) {
+        console.warn('refreshFromDB', e && e.message);
+    }
 }
-
 /* ── HELPERS ── */
-const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36);
-const now=()=>Date.now();
-const fmtAgo=t=>{const d=now()-t;if(d<60000)return'только что';if(d<3600000)return Math.floor(d/60000)+'м';if(d<86400000)return Math.floor(d/3600000)+'ч';return Math.floor(d/86400000)+'д'};
-const fmtTime=t=>new Date(t).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
-const DA=[{key:'a0',label:'агрессия',color:'#FF5C7A'},{key:'a1',label:'команда',color:'#6CA8FF'},{key:'a2',label:'коммуник.',color:'#3DDC97'},{key:'a3',label:'юмор',color:'#B09CF7'}];
-const PALS=[{bg:'#3a1a26',fg:'#FF7A93'},{bg:'#1a2438',fg:'#6CA8FF'},{bg:'#0d2e28',fg:'#3DDC97'},{bg:'#241a3e',fg:'#B09CF7'},{bg:'#2e1f0d',fg:'#FFB454'},{bg:'#1a2e1f',fg:'#7EE0A0'}];
-const pal=id=>PALS[(id||'x').charCodeAt(0)%PALS.length];
-const ONLINE_TTL=90000;
-const pingOnline=id=>ls.set('gv:on:'+id,now());
-const isOnline=id=>{const t=ls.get('gv:on:'+id);return!!(t&&now()-t<ONLINE_TTL)};
-
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+const now = () => Date.now();
+const fmtAgo = t => { const d = now() - t; if (d < 60000)
+    return 'только что'; if (d < 3600000)
+    return Math.floor(d / 60000) + 'м'; if (d < 86400000)
+    return Math.floor(d / 3600000) + 'ч'; return Math.floor(d / 86400000) + 'д'; };
+const fmtTime = t => new Date(t).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+const DA = [{ key: 'a0', label: 'агрессия', color: '#FF5C7A' }, { key: 'a1', label: 'команда', color: '#6CA8FF' }, { key: 'a2', label: 'коммуник.', color: '#3DDC97' }, { key: 'a3', label: 'юмор', color: '#B09CF7' }];
+const PALS = [{ bg: '#3a1a26', fg: '#FF7A93' }, { bg: '#1a2438', fg: '#6CA8FF' }, { bg: '#0d2e28', fg: '#3DDC97' }, { bg: '#241a3e', fg: '#B09CF7' }, { bg: '#2e1f0d', fg: '#FFB454' }, { bg: '#1a2e1f', fg: '#7EE0A0' }];
+const pal = id => PALS[(id || 'x').charCodeAt(0) % PALS.length];
+const ONLINE_TTL = 90000;
+const pingOnline = id => ls.set('gv:on:' + id, now());
+const isOnline = id => { const t = ls.get('gv:on:' + id); return !!(t && now() - t < ONLINE_TTL); };
 /* ── ICONS — встроенные SVG (без внешних CDN, всегда рисуются, идеально центрируются) ── */
-const ICON_PATHS={
-  'arrow-left':'M5 12h14M5 12l6 6M5 12l6-6',
-  'arrow-right':'M5 12h14M13 18l6-6M13 6l6 6',
-  'bell':'M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3H4a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6M9 17v1a3 3 0 0 0 6 0v-1',
-  'bolt':'M13 3v7h6l-8 11v-7H5l8-11',
-  'box':'M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3M12 12l8-4.5M12 12v9M12 12L4 7.5',
-  'camera':'M5 7h2l2-2h6l2 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M12 17a3 3 0 1 0 0-6a3 3 0 0 0 0 6',
-  'cards':'M3.5 8.5l4-4a2 2 0 0 1 3 0l3 3a2 2 0 0 1 0 3l-4 4a2 2 0 0 1-3 0l-3-3a2 2 0 0 1 0-3M10 16h7a2 2 0 0 0 2-2V8',
-  'check':'M5 12l5 5L20 7',
-  'clock':'M12 12V7M12 12l3 2M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18',
-  'confetti':'M4 20l5-13l8 8l-13 5M14 5l1-2M19 7l2-1M17 11l2 1M11 4l1 1',
-  'device-desktop':'M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1M9 20h6M12 16v4',
-  'device-mobile':'M7 4h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1M11 17h2',
-  'door-enter':'M13 12h-9M13 12l-3-3M13 12l-3 3M9 5V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-1',
-  'door-exit':'M11 12h9M20 12l-3-3M20 12l-3 3M15 5V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1',
-  'edit':'M4 20h4l10-10a2 2 0 0 0-3-3L5 17v3M13.5 6.5l3 3',
-  'heart':'M12 20l-7-7a4 4 0 0 1 7-3a4 4 0 0 1 7 3l-7 7',
-  'heart-filled':'M12 20l-7-7a4 4 0 0 1 7-3a4 4 0 0 1 7 3l-7 7',
-  'help-circle':'M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18M12 16v.5M12 13a2.5 2.5 0 1 0-2.5-3',
-  'layout-board':'M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1M9 4v16M15 4v16',
-  'clipboard-list':'M9 4h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 12h6M9 16h4',
-  'message-2':'M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H8l-4 4V6a1 1 0 0 1 1-1',
-  'message-circle':'M4 18l1.5-3A8 8 0 1 1 9 19l-5 -1',
-  'plus':'M12 5v14M5 12h14',
-  'refresh':'M20 11a8 8 0 1 0-1 4M20 5v6h-6',
-  'send':'M10 14L21 3M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1L21 3',
-  'trash':'M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3',
-  'user':'M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8M5 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1',
-  'user-plus':'M9 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8M3 21v-1a6 6 0 0 1 6-6h2M16 11h6M19 8v6',
-  'users':'M9 11a4 4 0 1 0 0-8a4 4 0 0 0 0 8M3 21v-1a6 6 0 0 1 6-6h0a6 6 0 0 1 6 6v1M16 3.5a4 4 0 0 1 0 7.5M21 21v-1a6 6 0 0 0-4-5.6',
-  'x':'M6 6l12 12M18 6L6 18',
-  'info-circle':'M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18M12 8v.5M11 12h1v4h1',
+const ICON_PATHS = {
+    'arrow-left': 'M5 12h14M5 12l6 6M5 12l6-6',
+    'arrow-right': 'M5 12h14M13 18l6-6M13 6l6 6',
+    'bell': 'M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3H4a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6M9 17v1a3 3 0 0 0 6 0v-1',
+    'bolt': 'M13 3v7h6l-8 11v-7H5l8-11',
+    'box': 'M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3M12 12l8-4.5M12 12v9M12 12L4 7.5',
+    'camera': 'M5 7h2l2-2h6l2 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M12 17a3 3 0 1 0 0-6a3 3 0 0 0 0 6',
+    'cards': 'M3.5 8.5l4-4a2 2 0 0 1 3 0l3 3a2 2 0 0 1 0 3l-4 4a2 2 0 0 1-3 0l-3-3a2 2 0 0 1 0-3M10 16h7a2 2 0 0 0 2-2V8',
+    'check': 'M5 12l5 5L20 7',
+    'clock': 'M12 12V7M12 12l3 2M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18',
+    'confetti': 'M4 20l5-13l8 8l-13 5M14 5l1-2M19 7l2-1M17 11l2 1M11 4l1 1',
+    'device-desktop': 'M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1M9 20h6M12 16v4',
+    'device-mobile': 'M7 4h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1M11 17h2',
+    'door-enter': 'M13 12h-9M13 12l-3-3M13 12l-3 3M9 5V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-1',
+    'door-exit': 'M11 12h9M20 12l-3-3M20 12l-3 3M15 5V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1',
+    'edit': 'M4 20h4l10-10a2 2 0 0 0-3-3L5 17v3M13.5 6.5l3 3',
+    'heart': 'M12 20l-7-7a4 4 0 0 1 7-3a4 4 0 0 1 7 3l-7 7',
+    'heart-filled': 'M12 20l-7-7a4 4 0 0 1 7-3a4 4 0 0 1 7 3l-7 7',
+    'help-circle': 'M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18M12 16v.5M12 13a2.5 2.5 0 1 0-2.5-3',
+    'layout-board': 'M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1M9 4v16M15 4v16',
+    'clipboard-list': 'M9 4h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 12h6M9 16h4',
+    'message-2': 'M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H8l-4 4V6a1 1 0 0 1 1-1',
+    'message-circle': 'M4 18l1.5-3A8 8 0 1 1 9 19l-5 -1',
+    'plus': 'M12 5v14M5 12h14',
+    'refresh': 'M20 11a8 8 0 1 0-1 4M20 5v6h-6',
+    'send': 'M10 14L21 3M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1L21 3',
+    'trash': 'M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3',
+    'user': 'M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8M5 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1',
+    'user-plus': 'M9 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8M3 21v-1a6 6 0 0 1 6-6h2M16 11h6M19 8v6',
+    'users': 'M9 11a4 4 0 1 0 0-8a4 4 0 0 0 0 8M3 21v-1a6 6 0 0 1 6-6h0a6 6 0 0 1 6 6v1M16 3.5a4 4 0 0 1 0 7.5M21 21v-1a6 6 0 0 0-4-5.6',
+    'x': 'M6 6l12 12M18 6L6 18',
+    'info-circle': 'M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18M12 8v.5M11 12h1v4h1',
 };
-function Icon({n,size,style,className}){
-  const d=ICON_PATHS[n]||ICON_PATHS['help-circle'];
-  const fill=n==='heart-filled';
-  return(
-    <svg className={className} width={size||'1em'} height={size||'1em'} viewBox='0 0 24 24'
-      fill={fill?'currentColor':'none'} stroke='currentColor' strokeWidth={fill?'1':'1.9'}
-      strokeLinecap='round' strokeLinejoin='round'
-      style={{display:'inline-block',verticalAlign:'-0.15em',flexShrink:0,...(style||{})}}>
-      <path d={d}/>
-    </svg>
-  );
+function Icon({ n, size, style, className }) {
+    const d = ICON_PATHS[n] || ICON_PATHS['help-circle'];
+    const fill = n === 'heart-filled';
+    return (React.createElement("svg", { className: className, width: size || '1em', height: size || '1em', viewBox: '0 0 24 24', fill: fill ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: fill ? '1' : '1.9', strokeLinecap: 'round', strokeLinejoin: 'round', style: { display: 'inline-block', verticalAlign: '-0.15em', flexShrink: 0, ...(style || {}) } },
+        React.createElement("path", { d: d })));
 }
-
 /* ── LINKIFY — превращает ссылки в кликабельные ── */
-const URL_RE=/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+|\b(?:vk\.com|t\.me|discord\.gg|steamcommunity\.com)\/[^\s<]+)/gi;
-function Linkify({text}){
-  if(!text)return null;
-  const parts=[];let last=0,m;URL_RE.lastIndex=0;
-  while((m=URL_RE.exec(text))!==null){
-    if(m.index>last)parts.push(text.slice(last,m.index));
-    let raw=m[0],trail='';
-    const tm=raw.match(/[.,!?;:)]+$/);if(tm){trail=tm[0];raw=raw.slice(0,-trail.length)}
-    const href=raw.startsWith('http')?raw:'https://'+raw;
-    parts.push(<a key={m.index} className='lnk' href={href} target='_blank' rel='noopener noreferrer' onClick={e=>e.stopPropagation()}>{raw}</a>);
-    if(trail)parts.push(trail);
-    last=m.index+m[0].length;
-  }
-  if(last<text.length)parts.push(text.slice(last));
-  return <>{parts}</>;
+const URL_RE = /(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+|\b(?:vk\.com|t\.me|discord\.gg|steamcommunity\.com)\/[^\s<]+)/gi;
+function Linkify({ text }) {
+    if (!text)
+        return null;
+    const parts = [];
+    let last = 0, m;
+    URL_RE.lastIndex = 0;
+    while ((m = URL_RE.exec(text)) !== null) {
+        if (m.index > last)
+            parts.push(text.slice(last, m.index));
+        let raw = m[0], trail = '';
+        const tm = raw.match(/[.,!?;:)]+$/);
+        if (tm) {
+            trail = tm[0];
+            raw = raw.slice(0, -trail.length);
+        }
+        const href = raw.startsWith('http') ? raw : 'https://' + raw;
+        parts.push(React.createElement("a", { key: m.index, className: 'lnk', href: href, target: '_blank', rel: 'noopener noreferrer', onClick: e => e.stopPropagation() }, raw));
+        if (trail)
+            parts.push(trail);
+        last = m.index + m[0].length;
+    }
+    if (last < text.length)
+        parts.push(text.slice(last));
+    return React.createElement(React.Fragment, null, parts);
 }
-
 /* ── AVATAR ── */
-function Avatar({user,size=40,radius=12,showStatus=false}){
-  const p=pal(user?.id);
-  const letters=(user?.nickname||'?').slice(0,2).toUpperCase();
-  return(
-    <div style={{position:'relative',flexShrink:0,width:size,height:size}}>
-      <div style={{width:size,height:size,borderRadius:radius,background:user?.avatar?'transparent':p.bg,color:p.fg,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--mono)',fontWeight:700,fontSize:Math.round(size*.3),overflow:'hidden',border:user?.avatar?'none':'1px solid rgba(255,255,255,.05)'}}>
-        {user?.avatar?<img src={user.avatar} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:letters}
-      </div>
-      {showStatus&&<div style={{position:'absolute',bottom:-1,right:-1,width:10,height:10,borderRadius:'50%',background:user?._online?'var(--green)':'#33333f',border:'2.5px solid var(--dark)',boxShadow:user?._online?'0 0 6px rgba(61,220,151,.6)':'none'}}/>}
-    </div>
-  );
+function Avatar({ user, size = 40, radius = 12, showStatus = false }) {
+    const p = pal(user === null || user === void 0 ? void 0 : user.id);
+    const letters = ((user === null || user === void 0 ? void 0 : user.nickname) || '?').slice(0, 2).toUpperCase();
+    return (React.createElement("div", { style: { position: 'relative', flexShrink: 0, width: size, height: size } },
+        React.createElement("div", { style: { width: size, height: size, borderRadius: radius, background: (user === null || user === void 0 ? void 0 : user.avatar) ? 'transparent' : p.bg, color: p.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontWeight: 700, fontSize: Math.round(size * .3), overflow: 'hidden', border: (user === null || user === void 0 ? void 0 : user.avatar) ? 'none' : '1px solid rgba(255,255,255,.05)' } }, (user === null || user === void 0 ? void 0 : user.avatar) ? React.createElement("img", { src: user.avatar, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover' } }) : letters),
+        showStatus && React.createElement("div", { style: { position: 'absolute', bottom: -1, right: -1, width: 10, height: 10, borderRadius: '50%', background: (user === null || user === void 0 ? void 0 : user._online) ? 'var(--green)' : '#33333f', border: '2.5px solid var(--dark)', boxShadow: (user === null || user === void 0 ? void 0 : user._online) ? '0 0 6px rgba(61,220,151,.6)' : 'none' } })));
 }
-
 /* ── AVATAR UPLOAD ── */
-function AvatarUpload({user,size=72,radius=18,onUpload,hint=false}){
-  // уменьшаем фото до маленькой превьюшки (256px, jpeg) — иначе большие фото
-  // переполняют хранилище и ломают сохранение профиля/объявлений
-  const handle=e=>{
-    const f=e.target.files?.[0];if(!f)return;
-    const rd=new FileReader();
-    rd.onload=()=>{
-      const img=new Image();
-      img.onload=()=>{
-        const M=256;let{width:w,height:h}=img;
-        if(w>h){if(w>M){h=h*M/w;w=M}}else{if(h>M){w=w*M/h;h=M}}
-        const c=document.createElement('canvas');c.width=w;c.height=h;
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        try{onUpload(c.toDataURL('image/jpeg',0.82))}catch{onUpload(rd.result)}
-      };
-      img.onerror=()=>onUpload(rd.result);
-      img.src=rd.result;
+function AvatarUpload({ user, size = 72, radius = 18, onUpload, hint = false }) {
+    // уменьшаем фото до маленькой превьюшки (256px, jpeg) — иначе большие фото
+    // переполняют хранилище и ломают сохранение профиля/объявлений
+    const handle = e => {
+        var _a;
+        const f = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0];
+        if (!f)
+            return;
+        const rd = new FileReader();
+        rd.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                const M = 256;
+                let { width: w, height: h } = img;
+                if (w > h) {
+                    if (w > M) {
+                        h = h * M / w;
+                        w = M;
+                    }
+                }
+                else {
+                    if (h > M) {
+                        w = w * M / h;
+                        h = M;
+                    }
+                }
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                try {
+                    onUpload(c.toDataURL('image/jpeg', 0.82));
+                }
+                catch (_a) {
+                    onUpload(rd.result);
+                }
+            };
+            img.onerror = () => onUpload(rd.result);
+            img.src = rd.result;
+        };
+        rd.readAsDataURL(f);
     };
-    rd.readAsDataURL(f);
-  };
-  return(
-    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:7}}>
-      <div className='aup' style={{width:size,height:size,borderRadius:radius}}>
-        <Avatar user={user} size={size} radius={radius}/>
-        <div className='aup-ov' style={{borderRadius:radius}}>
-          <Icon n='camera' style={{color:'#fff',fontSize:20}}/>
-          <span style={{fontFamily:'var(--mono)',fontSize:9,color:'rgba(255,255,255,.75)',letterSpacing:'.05em'}}>загрузить</span>
-        </div>
-        <input type='file' accept='image/*' onChange={handle}/>
-      </div>
-      {hint&&<span style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted2)',letterSpacing:'.05em',textAlign:'center'}}>нажми, чтобы загрузить фото</span>}
-    </div>
-  );
+    return (React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 } },
+        React.createElement("div", { className: 'aup', style: { width: size, height: size, borderRadius: radius } },
+            React.createElement(Avatar, { user: user, size: size, radius: radius }),
+            React.createElement("div", { className: 'aup-ov', style: { borderRadius: radius } },
+                React.createElement(Icon, { n: 'camera', style: { color: '#fff', fontSize: 20 } }),
+                React.createElement("span", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'rgba(255,255,255,.75)', letterSpacing: '.05em' } }, "\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C")),
+            React.createElement("input", { type: 'file', accept: 'image/*', onChange: handle })),
+        hint && React.createElement("span", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted2)', letterSpacing: '.05em', textAlign: 'center' } }, "\u043D\u0430\u0436\u043C\u0438, \u0447\u0442\u043E\u0431\u044B \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0444\u043E\u0442\u043E")));
 }
-
 /* ── ROLES PICKER ── */
-function RolesPicker({game,selected,onChange}){
-  const preset=(GAME_ROLES_DATA[game]||[]);
-  const[inp,setInp]=useState('');
-  const ref=useRef();
-  const togglePreset=r=>{
-    if(selected.includes(r)) onChange(selected.filter(x=>x!==r));
-    else onChange([...selected,r]);
-  };
-  const addCustom=e=>{
-    if((e.key==='Enter'||e.key===',')&&inp.trim()){
-      e.preventDefault();const v=inp.trim().replace(/,$/,'');
-      if(v&&!selected.includes(v))onChange([...selected,v]);
-      setInp('');
-    }
-    if(e.key==='Backspace'&&!inp&&selected.length)onChange(selected.slice(0,-1));
-  };
-  return(
-    <div className='role-pick-wrap'>
-      {preset.length>0&&<div className='role-chips'>
-        {preset.map(r=><button key={r} type='button' className={'role-chip'+(selected.includes(r)?' sel':'')} onClick={()=>togglePreset(r)}>{r}</button>)}
-      </div>}
-      <div style={{marginBottom:4}}>
-        <div className='tw' onClick={()=>ref.current?.focus()}>
-          {selected.filter(r=>!preset.includes(r)).map(r=><span key={r} className='tag tr'>{r}<button className='tx' onClick={e=>{e.stopPropagation();onChange(selected.filter(x=>x!==r))}}>×</button></span>)}
-          <input ref={ref} value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={addCustom} placeholder='Своя роль (Enter)...'/>
-        </div>
-      </div>
-    </div>
-  );
+function RolesPicker({ game, selected, onChange }) {
+    const preset = (GAME_ROLES_DATA[game] || []);
+    const [inp, setInp] = useState('');
+    const ref = useRef();
+    const togglePreset = r => {
+        if (selected.includes(r))
+            onChange(selected.filter(x => x !== r));
+        else
+            onChange([...selected, r]);
+    };
+    const addCustom = e => {
+        if ((e.key === 'Enter' || e.key === ',') && inp.trim()) {
+            e.preventDefault();
+            const v = inp.trim().replace(/,$/, '');
+            if (v && !selected.includes(v))
+                onChange([...selected, v]);
+            setInp('');
+        }
+        if (e.key === 'Backspace' && !inp && selected.length)
+            onChange(selected.slice(0, -1));
+    };
+    return (React.createElement("div", { className: 'role-pick-wrap' },
+        preset.length > 0 && React.createElement("div", { className: 'role-chips' }, preset.map(r => React.createElement("button", { key: r, type: 'button', className: 'role-chip' + (selected.includes(r) ? ' sel' : ''), onClick: () => togglePreset(r) }, r))),
+        React.createElement("div", { style: { marginBottom: 4 } },
+            React.createElement("div", { className: 'tw', onClick: () => { var _a; return (_a = ref.current) === null || _a === void 0 ? void 0 : _a.focus(); } },
+                selected.filter(r => !preset.includes(r)).map(r => React.createElement("span", { key: r, className: 'tag tr' },
+                    r,
+                    React.createElement("button", { className: 'tx', onClick: e => { e.stopPropagation(); onChange(selected.filter(x => x !== r)); } }, "\u00D7"))),
+                React.createElement("input", { ref: ref, value: inp, onChange: e => setInp(e.target.value), onKeyDown: addCustom, placeholder: '\u0421\u0432\u043E\u044F \u0440\u043E\u043B\u044C (Enter)...' })))));
 }
-
 /* ── MODAL ── */
-function Modal({title,onClose,children,maxW=480}){
-  useEffect(()=>{const fn=e=>e.key==='Escape'&&onClose();window.addEventListener('keydown',fn);return()=>window.removeEventListener('keydown',fn)},[]);
-  return(
-    <div className='mbg' onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className='mbox pop' style={{maxWidth:maxW}}>
-        <div className='mhd'><div className='mt'>{title}</div><button className='btn btn-g btn-sm' style={{padding:'8px 10px'}} onClick={onClose}><Icon n='x' style={{fontSize:16}}/></button></div>
-        {children}
-      </div>
-    </div>
-  );
+function Modal({ title, onClose, children, maxW = 480 }) {
+    useEffect(() => { const fn = e => e.key === 'Escape' && onClose(); window.addEventListener('keydown', fn); return () => window.removeEventListener('keydown', fn); }, []);
+    return (React.createElement("div", { className: 'mbg', onClick: e => e.target === e.currentTarget && onClose() },
+        React.createElement("div", { className: 'mbox pop', style: { maxWidth: maxW } },
+            React.createElement("div", { className: 'mhd' },
+                React.createElement("div", { className: 'mt' }, title),
+                React.createElement("button", { className: 'btn btn-g btn-sm', style: { padding: '8px 10px' }, onClick: onClose },
+                    React.createElement(Icon, { n: 'x', style: { fontSize: 16 } }))),
+            children)));
 }
-
 /* ── RADAR ── */
-function RadarSvg({axes,values,size=80}){
-  const cx=size/2,cy=size/2,r=size*.38,n=axes.length;
-  const pts=axes.map((_,i)=>{const a=(i/n)*2*Math.PI-Math.PI/2,rr=((values[i]||5)/10)*r;return[cx+rr*Math.cos(a),cy+rr*Math.sin(a)]});
-  const grids=[.33,.66,1].map(f=>{const gp=axes.map((_,i)=>{const a=(i/n)*2*Math.PI-Math.PI/2;return[cx+f*r*Math.cos(a),cy+f*r*Math.sin(a)].join(',')}).join(' ');return<polygon key={f} points={gp} fill='none' stroke='#22222c' strokeWidth='1'/>});
-  return(
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{flexShrink:0}}>
-      <defs><linearGradient id='rg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stopColor='#FF5C7A'/><stop offset='1' stopColor='#7C6CFF'/></linearGradient></defs>
-      {grids}
-      {axes.map((_,i)=>{const a=(i/n)*2*Math.PI-Math.PI/2;return<line key={i} x1={cx} y1={cy} x2={cx+r*Math.cos(a)} y2={cy+r*Math.sin(a)} stroke='#22222c' strokeWidth='1'/>})}
-      <polygon points={pts.map(p=>p.join(',')).join(' ')} fill='rgba(255,92,122,.14)' stroke='url(#rg)' strokeWidth='1.5' strokeLinejoin='round'/>
-      {pts.map((p,i)=><circle key={i} cx={p[0]} cy={p[1]} r='2.6' fill={axes[i]?.color||'#FF5C7A'}/>)}
-    </svg>
-  );
+function RadarSvg({ axes, values, size = 80 }) {
+    const cx = size / 2, cy = size / 2, r = size * .38, n = axes.length;
+    const pts = axes.map((_, i) => { const a = (i / n) * 2 * Math.PI - Math.PI / 2, rr = ((values[i] || 5) / 10) * r; return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)]; });
+    const grids = [.33, .66, 1].map(f => { const gp = axes.map((_, i) => { const a = (i / n) * 2 * Math.PI - Math.PI / 2; return [cx + f * r * Math.cos(a), cy + f * r * Math.sin(a)].join(','); }).join(' '); return React.createElement("polygon", { key: f, points: gp, fill: 'none', stroke: '#22222c', strokeWidth: '1' }); });
+    return (React.createElement("svg", { width: size, height: size, viewBox: `0 0 ${size} ${size}`, style: { flexShrink: 0 } },
+        React.createElement("defs", null,
+            React.createElement("linearGradient", { id: 'rg', x1: '0', y1: '0', x2: '1', y2: '1' },
+                React.createElement("stop", { offset: '0', stopColor: '#FF5C7A' }),
+                React.createElement("stop", { offset: '1', stopColor: '#7C6CFF' }))),
+        grids,
+        axes.map((_, i) => { const a = (i / n) * 2 * Math.PI - Math.PI / 2; return React.createElement("line", { key: i, x1: cx, y1: cy, x2: cx + r * Math.cos(a), y2: cy + r * Math.sin(a), stroke: '#22222c', strokeWidth: '1' }); }),
+        React.createElement("polygon", { points: pts.map(p => p.join(',')).join(' '), fill: 'rgba(255,92,122,.14)', stroke: 'url(#rg)', strokeWidth: '1.5', strokeLinejoin: 'round' }),
+        pts.map((p, i) => { var _a; return React.createElement("circle", { key: i, cx: p[0], cy: p[1], r: '2.6', fill: ((_a = axes[i]) === null || _a === void 0 ? void 0 : _a.color) || '#FF5C7A' }); })));
 }
-function RadarSliders({axes,values,onChange}){
-  return<div>{axes.map((ax,i)=><div key={ax.key} className='sr'><span className='srl' style={{color:ax.color}}>{ax.label}</span><input type='range' min='1' max='10' value={values[i]||5} onChange={e=>{const v=[...values];v[i]=+e.target.value;onChange(v)}}/><span className='srv' style={{color:ax.color}}>{values[i]||5}</span></div>)}</div>;
+function RadarSliders({ axes, values, onChange }) {
+    return React.createElement("div", null, axes.map((ax, i) => React.createElement("div", { key: ax.key, className: 'sr' },
+        React.createElement("span", { className: 'srl', style: { color: ax.color } }, ax.label),
+        React.createElement("input", { type: 'range', min: '1', max: '10', value: values[i] || 5, onChange: e => { const v = [...values]; v[i] = +e.target.value; onChange(v); } }),
+        React.createElement("span", { className: 'srv', style: { color: ax.color } }, values[i] || 5))));
 }
-function AxisEditor({axes,onChange}){
-  return(
-    <div>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-        <label className='fl' style={{margin:0}}>Оси радара</label>
-        <span style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted2)'}}>переименуй под себя</span>
-      </div>
-      <p className='fhint' style={{marginBottom:12}}>💡 Примеры: «токсичность», «микрофон», «пунктуальность»</p>
-      {axes.map((ax,i)=><div key={i} className='ae-row'><div className='ae-dot' style={{background:ax.color}}/><input className='ae-inp' value={ax.label} maxLength={14} onChange={e=>{const a=[...axes];a[i]={...a[i],label:e.target.value};onChange(a)}}/></div>)}
-    </div>
-  );
+function AxisEditor({ axes, onChange }) {
+    return (React.createElement("div", null,
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
+            React.createElement("label", { className: 'fl', style: { margin: 0 } }, "\u041E\u0441\u0438 \u0440\u0430\u0434\u0430\u0440\u0430"),
+            React.createElement("span", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted2)' } }, "\u043F\u0435\u0440\u0435\u0438\u043C\u0435\u043D\u0443\u0439 \u043F\u043E\u0434 \u0441\u0435\u0431\u044F")),
+        React.createElement("p", { className: 'fhint', style: { marginBottom: 12 } }, "\uD83D\uDCA1 \u041F\u0440\u0438\u043C\u0435\u0440\u044B: \u00AB\u0442\u043E\u043A\u0441\u0438\u0447\u043D\u043E\u0441\u0442\u044C\u00BB, \u00AB\u043C\u0438\u043A\u0440\u043E\u0444\u043E\u043D\u00BB, \u00AB\u043F\u0443\u043D\u043A\u0442\u0443\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C\u00BB"),
+        axes.map((ax, i) => React.createElement("div", { key: i, className: 'ae-row' },
+            React.createElement("div", { className: 'ae-dot', style: { background: ax.color } }),
+            React.createElement("input", { className: 'ae-inp', value: ax.label, maxLength: 14, onChange: e => { const a = [...axes]; a[i] = { ...a[i], label: e.target.value }; onChange(a); } })))));
 }
-
 /* ── USER PROFILE MODAL ── */
-function UserModal({user,onClose,onChat,selfView}){
-  if(!user)return null;
-  const axes=user.radarAxes||DA;
-  const vals=user.radarValues||axes.map(a=>user.radar?.[a.key]||5);
-  return(
-    <Modal title={selfView?'Твой профиль':'Профиль игрока'} onClose={onClose} maxW={400}>
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:9,padding:'6px 0 18px'}}>
-        <Avatar user={user} size={76} radius={22} showStatus/>
-        <div style={{fontSize:18,fontWeight:600,fontFamily:'var(--sans)'}}>{user.nickname}</div>
-        <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted2)'}}>
-          {user._online?<span style={{color:'var(--green)'}}>● онлайн</span>:<span>● оффлайн</span>}
-          {user.createdAt&&<>{' · с '}{new Date(user.createdAt).toLocaleDateString('ru')}</>}
-        </div>
-      </div>
-      <div className='card2' style={{marginBottom:10}}>
-        <div className='sl'>игры и роли</div>
-        {(user.games||[]).length===0&&<span style={{fontSize:12,color:'var(--muted2)',fontFamily:'var(--mono)'}}>не указаны</span>}
-        {(user.games||[]).map((g,i)=><div key={i} style={{marginBottom:i<(user.games.length-1)?12:0}}>
-          <div style={{fontSize:13,fontWeight:600,marginBottom:5,color:'var(--white)'}}>{g.game}</div>
-          {g.roles?.length>0
-            ?<div style={{display:'flex',gap:5,flexWrap:'wrap'}}>{g.roles.map(r=><span key={r} className='tag tr'>{r}</span>)}</div>
-            :<span style={{fontSize:12,color:'var(--muted2)',fontFamily:'var(--mono)'}}>роли не указаны</span>
-          }
-        </div>)}
-      </div>
-      <div className='card2' style={{marginBottom:16}}>
-        <div className='sl'>характер</div>
-        <div style={{display:'flex',gap:14,alignItems:'center'}}>
-          <RadarSvg axes={axes} values={vals} size={84}/>
-          <div style={{flex:1}}>{axes.map((ax,i)=><div key={ax.key} className='rb'>
-            <div className='rbn' style={{color:ax.color}}>{ax.label}</div>
-            <div className='rbt'><div className='rbf' style={{width:(vals[i]||5)*10+'%',background:ax.color}}/></div>
-            <div className='rbv' style={{color:ax.color}}>{vals[i]||5}</div>
-          </div>)}</div>
-        </div>
-      </div>
-      {onChat&&<button className='btn btn-p btn-fw' onClick={()=>{onChat();onClose();}}>Написать</button>}
-    </Modal>
-  );
+function UserModal({ user, onClose, onChat, selfView }) {
+    if (!user)
+        return null;
+    const axes = user.radarAxes || DA;
+    const vals = user.radarValues || axes.map(a => { var _a; return ((_a = user.radar) === null || _a === void 0 ? void 0 : _a[a.key]) || 5; });
+    return (React.createElement(Modal, { title: selfView ? 'Твой профиль' : 'Профиль игрока', onClose: onClose, maxW: 400 },
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, padding: '6px 0 18px' } },
+            React.createElement(Avatar, { user: user, size: 76, radius: 22, showStatus: true }),
+            React.createElement("div", { style: { fontSize: 18, fontWeight: 600, fontFamily: 'var(--sans)' } }, user.nickname),
+            React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted2)' } },
+                user._online ? React.createElement("span", { style: { color: 'var(--green)' } }, "\u25CF \u043E\u043D\u043B\u0430\u0439\u043D") : React.createElement("span", null, "\u25CF \u043E\u0444\u0444\u043B\u0430\u0439\u043D"),
+                user.createdAt && React.createElement(React.Fragment, null,
+                    ' · с ',
+                    new Date(user.createdAt).toLocaleDateString('ru')))),
+        React.createElement("div", { className: 'card2', style: { marginBottom: 10 } },
+            React.createElement("div", { className: 'sl' }, "\u0438\u0433\u0440\u044B \u0438 \u0440\u043E\u043B\u0438"),
+            (user.games || []).length === 0 && React.createElement("span", { style: { fontSize: 12, color: 'var(--muted2)', fontFamily: 'var(--mono)' } }, "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u044B"),
+            (user.games || []).map((g, i) => {
+                var _a;
+                return React.createElement("div", { key: i, style: { marginBottom: i < (user.games.length - 1) ? 12 : 0 } },
+                    React.createElement("div", { style: { fontSize: 13, fontWeight: 600, marginBottom: 5, color: 'var(--white)' } }, g.game),
+                    ((_a = g.roles) === null || _a === void 0 ? void 0 : _a.length) > 0
+                        ? React.createElement("div", { style: { display: 'flex', gap: 5, flexWrap: 'wrap' } }, g.roles.map(r => React.createElement("span", { key: r, className: 'tag tr' }, r)))
+                        : React.createElement("span", { style: { fontSize: 12, color: 'var(--muted2)', fontFamily: 'var(--mono)' } }, "\u0440\u043E\u043B\u0438 \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u044B"));
+            })),
+        React.createElement("div", { className: 'card2', style: { marginBottom: 16 } },
+            React.createElement("div", { className: 'sl' }, "\u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440"),
+            React.createElement("div", { style: { display: 'flex', gap: 14, alignItems: 'center' } },
+                React.createElement(RadarSvg, { axes: axes, values: vals, size: 84 }),
+                React.createElement("div", { style: { flex: 1 } }, axes.map((ax, i) => React.createElement("div", { key: ax.key, className: 'rb' },
+                    React.createElement("div", { className: 'rbn', style: { color: ax.color } }, ax.label),
+                    React.createElement("div", { className: 'rbt' },
+                        React.createElement("div", { className: 'rbf', style: { width: (vals[i] || 5) * 10 + '%', background: ax.color } })),
+                    React.createElement("div", { className: 'rbv', style: { color: ax.color } }, vals[i] || 5)))))),
+        onChat && React.createElement("button", { className: 'btn btn-p btn-fw', onClick: () => { onChat(); onClose(); } }, "\u041D\u0430\u043F\u0438\u0441\u0430\u0442\u044C")));
 }
-
 /* ── TUTORIAL ── */
-function Tutorial({onClose}){
-  return(
-    <div className='tut-bg'>
-      <div className='mbox pop' style={{maxWidth:420}}>
-        <div style={{textAlign:'center',marginBottom:24}}>
-          <div style={{fontSize:34,marginBottom:8}}>🎮</div>
-          <div style={{fontSize:17,fontWeight:600,marginBottom:4,fontFamily:'var(--sans)'}}>Поиск тиммейтов</div>
-          <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.5}}>Как здесь найти напарника</div>
-        </div>
-        <div className='tut-step'><div className='tut-num'>1</div><div className='tut-text'><strong>Открой дроп</strong> — подберём игроков под твои интересы: сначала те, кто играет в те же игры, что и ты</div></div>
-        <div className='tut-step'><div className='tut-num'>2</div><div className='tut-text'><strong>Смотри анкету</strong> — игры, роли и радар характера. Совпадения по играм подсвечены</div></div>
-        <div className='tut-step'><div className='tut-num'>3</div><div className='tut-text'><strong>Нажми ❤️ «В отряд»</strong> если хочешь играть вместе. Если игрок лайкнет в ответ — появится чат (мэтч!)</div></div>
-        <div className='tut-step' style={{marginBottom:0}}><div className='tut-num'>4</div><div className='tut-text'><strong>10 дропов в день</strong> — лимит сбрасывается каждый день. Не хватает? Используй доску объявлений!</div></div>
-        <div className='sep'/>
-        <button className='btn btn-p btn-fw' onClick={onClose}>Понятно, поехали! <Icon n='arrow-right'/></button>
-      </div>
-    </div>
-  );
+function Tutorial({ onClose }) {
+    return (React.createElement("div", { className: 'tut-bg' },
+        React.createElement("div", { className: 'mbox pop', style: { maxWidth: 420 } },
+            React.createElement("div", { style: { textAlign: 'center', marginBottom: 24 } },
+                React.createElement("div", { style: { fontSize: 34, marginBottom: 8 } }, "\uD83C\uDFAE"),
+                React.createElement("div", { style: { fontSize: 17, fontWeight: 600, marginBottom: 4, fontFamily: 'var(--sans)' } }, "\u041F\u043E\u0438\u0441\u043A \u0442\u0438\u043C\u043C\u0435\u0439\u0442\u043E\u0432"),
+                React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 } }, "\u041A\u0430\u043A \u0437\u0434\u0435\u0441\u044C \u043D\u0430\u0439\u0442\u0438 \u043D\u0430\u043F\u0430\u0440\u043D\u0438\u043A\u0430")),
+            React.createElement("div", { className: 'tut-step' },
+                React.createElement("div", { className: 'tut-num' }, "1"),
+                React.createElement("div", { className: 'tut-text' },
+                    React.createElement("strong", null, "\u041E\u0442\u043A\u0440\u043E\u0439 \u0434\u0440\u043E\u043F"),
+                    " \u2014 \u043F\u043E\u0434\u0431\u0435\u0440\u0451\u043C \u0438\u0433\u0440\u043E\u043A\u043E\u0432 \u043F\u043E\u0434 \u0442\u0432\u043E\u0438 \u0438\u043D\u0442\u0435\u0440\u0435\u0441\u044B: \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u0442\u0435, \u043A\u0442\u043E \u0438\u0433\u0440\u0430\u0435\u0442 \u0432 \u0442\u0435 \u0436\u0435 \u0438\u0433\u0440\u044B, \u0447\u0442\u043E \u0438 \u0442\u044B")),
+            React.createElement("div", { className: 'tut-step' },
+                React.createElement("div", { className: 'tut-num' }, "2"),
+                React.createElement("div", { className: 'tut-text' },
+                    React.createElement("strong", null, "\u0421\u043C\u043E\u0442\u0440\u0438 \u0430\u043D\u043A\u0435\u0442\u0443"),
+                    " \u2014 \u0438\u0433\u0440\u044B, \u0440\u043E\u043B\u0438 \u0438 \u0440\u0430\u0434\u0430\u0440 \u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440\u0430. \u0421\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u044F \u043F\u043E \u0438\u0433\u0440\u0430\u043C \u043F\u043E\u0434\u0441\u0432\u0435\u0447\u0435\u043D\u044B")),
+            React.createElement("div", { className: 'tut-step' },
+                React.createElement("div", { className: 'tut-num' }, "3"),
+                React.createElement("div", { className: 'tut-text' },
+                    React.createElement("strong", null, "\u041D\u0430\u0436\u043C\u0438 \u2764\uFE0F \u00AB\u0412 \u043E\u0442\u0440\u044F\u0434\u00BB"),
+                    " \u0435\u0441\u043B\u0438 \u0445\u043E\u0447\u0435\u0448\u044C \u0438\u0433\u0440\u0430\u0442\u044C \u0432\u043C\u0435\u0441\u0442\u0435. \u0415\u0441\u043B\u0438 \u0438\u0433\u0440\u043E\u043A \u043B\u0430\u0439\u043A\u043D\u0435\u0442 \u0432 \u043E\u0442\u0432\u0435\u0442 \u2014 \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0447\u0430\u0442 (\u043C\u044D\u0442\u0447!)")),
+            React.createElement("div", { className: 'tut-step', style: { marginBottom: 0 } },
+                React.createElement("div", { className: 'tut-num' }, "4"),
+                React.createElement("div", { className: 'tut-text' },
+                    React.createElement("strong", null, "10 \u0434\u0440\u043E\u043F\u043E\u0432 \u0432 \u0434\u0435\u043D\u044C"),
+                    " \u2014 \u043B\u0438\u043C\u0438\u0442 \u0441\u0431\u0440\u0430\u0441\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C. \u041D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442? \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \u0434\u043E\u0441\u043A\u0443 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0439!")),
+            React.createElement("div", { className: 'sep' }),
+            React.createElement("button", { className: 'btn btn-p btn-fw', onClick: onClose },
+                "\u041F\u043E\u043D\u044F\u0442\u043D\u043E, \u043F\u043E\u0435\u0445\u0430\u043B\u0438! ",
+                React.createElement(Icon, { n: 'arrow-right' })))));
 }
-
 /* ── LOGIN ── */
-const WELCOME=['С возвращением в игру','Снова в строю?','Пора собирать отряд','Тиммейты заждались'];
-function LoginScreen({onLogin,onRegister}){
-  const[nick,setNick]=useState('');
-  const[err,setErr]=useState('');
-  const greet=useRef(WELCOME[Math.floor(Math.random()*WELCOME.length)]);
-  const tryLogin=()=>{
-    if(!nick.trim()){setErr('Введи никнейм');return}
-    const found=ls.list('gv:u:').map(k=>ls.get(k)).find(u=>u&&u.nickname.toLowerCase()===nick.trim().toLowerCase());
-    if(found){ls.set('gv:me',found);onLogin(found);}
-    else setErr('Игрок не найден — проверь ник или создай новый аккаунт');
-  };
-  return(
-    <div className='ob'>
-      <div className='ob-b' style={{maxWidth:390}}>
-        <div className='logo' style={{fontSize:20,marginBottom:8}}>ГГВП</div>
-        <div className='ob-sub' style={{marginBottom:24}}>ПОИСК ТИММЕЙТОВ</div>
-        <div style={{fontSize:17,fontWeight:600,marginBottom:5,fontFamily:'var(--sans)'}}>{greet.current}</div>
-        <div style={{fontSize:13,color:'var(--muted)',marginBottom:22,lineHeight:1.5}}>Введи свой никнейм, чтобы продолжить</div>
-        <div className='fg'>
-          <input placeholder='твой никнейм...' value={nick} autoFocus onChange={e=>{setNick(e.target.value);setErr('')}} onKeyDown={e=>e.key==='Enter'&&tryLogin()}/>
-          {err&&<p style={{color:'var(--pk)',fontSize:12,marginTop:7,fontFamily:'var(--mono)'}}>{err}</p>}
-        </div>
-        <button className='btn btn-p btn-fw' style={{marginBottom:10}} onClick={tryLogin}>Войти</button>
-        <button className='btn btn-g btn-fw' onClick={onRegister}>Создать аккаунт</button>
-        <p style={{fontFamily:'var(--mono)',fontSize:9,color:'#33333f',marginTop:16,textAlign:'center',lineHeight:1.7}}>данные хранятся в браузере<br/>нужен тот же браузер, что при регистрации</p>
-      </div>
-    </div>
-  );
+const WELCOME = ['С возвращением в игру', 'Снова в строю?', 'Пора собирать отряд', 'Тиммейты заждались'];
+function LoginScreen({ onLogin, onRegister }) {
+    const [nick, setNick] = useState('');
+    const [err, setErr] = useState('');
+    const greet = useRef(WELCOME[Math.floor(Math.random() * WELCOME.length)]);
+    const tryLogin = () => {
+        if (!nick.trim()) {
+            setErr('Введи никнейм');
+            return;
+        }
+        const found = ls.list('gv:u:').map(k => ls.get(k)).find(u => u && u.nickname.toLowerCase() === nick.trim().toLowerCase());
+        if (found) {
+            ls.set('gv:me', found);
+            onLogin(found);
+        }
+        else
+            setErr('Игрок не найден — проверь ник или создай новый аккаунт');
+    };
+    return (React.createElement("div", { className: 'ob' },
+        React.createElement("div", { className: 'ob-b', style: { maxWidth: 390 } },
+            React.createElement("div", { className: 'logo', style: { fontSize: 20, marginBottom: 8 } }, "\u0413\u0413\u0412\u041F"),
+            React.createElement("div", { className: 'ob-sub', style: { marginBottom: 24 } }, "\u041F\u041E\u0418\u0421\u041A \u0422\u0418\u041C\u041C\u0415\u0419\u0422\u041E\u0412"),
+            React.createElement("div", { style: { fontSize: 17, fontWeight: 600, marginBottom: 5, fontFamily: 'var(--sans)' } }, greet.current),
+            React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', marginBottom: 22, lineHeight: 1.5 } }, "\u0412\u0432\u0435\u0434\u0438 \u0441\u0432\u043E\u0439 \u043D\u0438\u043A\u043D\u0435\u0439\u043C, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C"),
+            React.createElement("div", { className: 'fg' },
+                React.createElement("input", { placeholder: '\u0442\u0432\u043E\u0439 \u043D\u0438\u043A\u043D\u0435\u0439\u043C...', value: nick, autoFocus: true, onChange: e => { setNick(e.target.value); setErr(''); }, onKeyDown: e => e.key === 'Enter' && tryLogin() }),
+                err && React.createElement("p", { style: { color: 'var(--pk)', fontSize: 12, marginTop: 7, fontFamily: 'var(--mono)' } }, err)),
+            React.createElement("button", { className: 'btn btn-p btn-fw', style: { marginBottom: 10 }, onClick: tryLogin }, "\u0412\u043E\u0439\u0442\u0438"),
+            React.createElement("button", { className: 'btn btn-g btn-fw', onClick: onRegister }, "\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0430\u043A\u043A\u0430\u0443\u043D\u0442"),
+            React.createElement("p", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: '#33333f', marginTop: 16, textAlign: 'center', lineHeight: 1.7 } },
+                "\u0434\u0430\u043D\u043D\u044B\u0435 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435",
+                React.createElement("br", null),
+                "\u043D\u0443\u0436\u0435\u043D \u0442\u043E\u0442 \u0436\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440, \u0447\u0442\u043E \u043F\u0440\u0438 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438"))));
 }
-
 /* ── ONBOARDING ── */
-function Onboarding({onDone,onBack}){
-  const[step,setStep]=useState(0);
-  const[nick,setNick]=useState('');
-  const[avatar,setAvatar]=useState(null);
-  const[games,setGames]=useState([{game:'Valorant',roles:[]}]);
-  const[axes,setAxes]=useState(DA.map(a=>({...a})));
-  const[vals,setVals]=useState([6,6,6,6]);
-  const[err,setErr]=useState('');
-
-  const next=()=>{
-    if(step===0){
-      if(!nick.trim()){setErr('Введи никнейм');return}
-      const taken=ls.list('gv:u:').map(k=>ls.get(k)).some(u=>u&&u.nickname.toLowerCase()===nick.trim().toLowerCase());
-      if(taken){setErr('Такой ник уже занят — выбери другой');return}
-    }
-    setErr('');setStep(s=>s+1);
-  };
-  const done=()=>{
-    const id=uid();
-    const user={id,nickname:nick.trim(),avatar,games,radarAxes:axes,radarValues:vals,
-      radar:Object.fromEntries(axes.map((a,i)=>[a.key,vals[i]])),createdAt:now()};
-    ls.set('gv:me',user);ls.set('gv:u:'+id,user);
-    ls.set('gv:op:'+id+':'+new Date().toDateString(),0); // у нового аккаунта всегда полная энергия дропа
-    onDone(user);
-  };
-  const back=()=>{if(step===0){onBack&&onBack()}else setStep(s=>s-1)};
-
-  return(
-    <div className='ob'>
-      <div className='ob-b'>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:2}}>
-          <div>
-            <div className='logo' style={{fontSize:15}}>ГГВП</div>
-            <div className='ob-sub' style={{marginBottom:14}}>СЕРВИС ПОИСКА ТИММЕЙТОВ</div>
-          </div>
-          <button className='btn btn-g btn-sm' onClick={onBack} style={{flexShrink:0}}>Ко входу</button>
-        </div>
-        <div className='prog'>{[0,1,2].map(i=><div key={i} className={'ps'+(i<=step?' d':'')}/>)}</div>
-
-        {step===0&&<div className='fu'>
-          <div style={{fontSize:16,fontWeight:600,marginBottom:5,fontFamily:'var(--sans)'}}>Как тебя зовут?</div>
-          <div style={{fontSize:13,color:'var(--muted)',marginBottom:22,lineHeight:1.5}}>Игровой ник — будет виден всем</div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:18,marginBottom:22}}>
-            <AvatarUpload user={{id:'ob',nickname:nick||'?',avatar}} size={84} radius={24} onUpload={s=>setAvatar(s)} hint={true}/>
-            <div style={{width:'100%'}}>
-              <input placeholder='xz_phantom' value={nick} autoFocus onChange={e=>{setNick(e.target.value);setErr('')}} onKeyDown={e=>e.key==='Enter'&&nick.trim()&&next()} style={{fontSize:16,textAlign:'center',padding:'13px 14px'}}/>
-              {err&&<p style={{color:'var(--pk)',fontSize:12,marginTop:7,textAlign:'center',fontFamily:'var(--mono)'}}>{err}</p>}
-            </div>
-          </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className='btn btn-g' style={{flex:'0 0 auto'}} onClick={back}>Назад</button>
-            <button className='btn btn-p' style={{flex:1}} onClick={next}>Далее</button>
-          </div>
-        </div>}
-
-        {step===1&&<div className='fu'>
-          <div style={{fontSize:16,fontWeight:600,marginBottom:5,fontFamily:'var(--sans)'}}>В какие игры играешь?</div>
-          <div style={{fontSize:13,color:'var(--muted)',marginBottom:18,lineHeight:1.5}}>Выбери игру и роли из списка или добавь свои</div>
-          {games.map((g,i)=><div key={i} className='card2' style={{marginBottom:10}}>
-            <div style={{display:'flex',gap:8,marginBottom:10}}>
-              <select value={g.game} onChange={e=>{const ng=[...games];ng[i]={...ng[i],game:e.target.value,roles:[]};setGames(ng)}} style={{flex:1}}>
-                {GAMES.map(gm=><option key={gm}>{gm}</option>)}
-              </select>
-              {games.length>1&&<button className='btn btn-g btn-sm' style={{padding:'8px 11px'}} onClick={()=>setGames(games.filter((_,j)=>j!==i))}><Icon n='trash'/></button>}
-            </div>
-            <label className='fl'>Роли</label>
-            <RolesPicker game={g.game} selected={g.roles} onChange={v=>{const ng=[...games];ng[i]={...ng[i],roles:v};setGames(ng)}}/>
-          </div>)}
-          <button className='btn btn-g btn-sm btn-fw' style={{marginBottom:18}} onClick={()=>setGames([...games,{game:'CS2',roles:[]}])}>Добавить игру</button>
-          <div style={{display:'flex',gap:8}}>
-            <button className='btn btn-g' style={{flex:'0 0 auto'}} onClick={back}>Назад</button>
-            <button className='btn btn-p' style={{flex:1}} onClick={next}>Далее</button>
-          </div>
-        </div>}
-
-        {step===2&&<div className='fu'>
-          <div style={{fontSize:16,fontWeight:600,marginBottom:5,fontFamily:'var(--sans)'}}>Твой характер</div>
-          <div style={{fontSize:13,color:'var(--muted)',marginBottom:18,lineHeight:1.5}}>Радар виден всем. Оси можно настроить под себя</div>
-          <div style={{display:'flex',gap:16,marginBottom:16,alignItems:'center'}}>
-            <RadarSvg axes={axes} values={vals} size={104}/>
-            <div style={{flex:1}}><RadarSliders axes={axes} values={vals} onChange={setVals}/></div>
-          </div>
-          <div className='sep'/>
-          <AxisEditor axes={axes} onChange={setAxes}/>
-          <div style={{display:'flex',gap:8,marginTop:20}}>
-            <button className='btn btn-g' style={{flex:'0 0 auto'}} onClick={back}>Назад</button>
-            <button className='btn btn-p' style={{flex:1}} onClick={done}>Войти в игру</button>
-          </div>
-        </div>}
-      </div>
-    </div>
-  );
-}
-
-/* ── CHAT helpers: snapshot участников, чтобы имя/аватар были видны всегда ── */
-function makeChat(me,target){
-  const cid=[me.id,target.id].sort().join('_');
-  return {id:cid,participants:[me.id,target.id],
-    peers:{[me.id]:{id:me.id,nickname:me.nickname,avatar:me.avatar||null},
-           [target.id]:{id:target.id,nickname:target.nickname,avatar:target.avatar||null}},
-    lastMsg:'',lastTs:now(),createdAt:now()};
-}
-function ensureChat(me,target,chats,setChats){
-  const cid=[me.id,target.id].sort().join('_');
-  if(chats.find(c=>c.id===cid))return cid;
-  const nc=makeChat(me,target);
-  const upd=[...chats,nc];setChats(upd);ls.set('gv:ch:'+me.id,upd);
-  const tc=ls.get('gv:ch:'+target.id)||[];
-  if(!tc.find(c=>c.id===cid))ls.set('gv:ch:'+target.id,[...tc,nc]);
-  return cid;
-}
-
-/* ── BOARD ── */
-function BoardScreen({me,users,listings,setListings,chats,setChats,goChat}){
-  const[showForm,setShowForm]=useState(false);
-  const[editId,setEditId]=useState(null);
-  const[form,setForm]=useState({game:GAMES[0]||'Valorant',rolesNeeded:[],description:''});
-  const[ferr,setFerr]=useState('');
-  const[viewUser,setViewUser]=useState(null);
-
-  const mine=listings.filter(l=>l.userId===me.id);
-  const others=listings.filter(l=>l.userId!==me.id&&l.expiresAt>now());
-  const allUsers=Object.values(users||{});
-  const playerCount=allUsers.length;
-  const onlineCount=allUsers.filter(u=>u._online).length;
-
-  // совместимость: старые объявления могли хранить roleNeeded (строка)
-  const rolesOf=l=>Array.isArray(l.rolesNeeded)?l.rolesNeeded:(l.roleNeeded?[l.roleNeeded]:[]);
-
-  const openCreate=()=>{setForm({game:GAMES[0]||'Valorant',rolesNeeded:[],description:''});setEditId(null);setFerr('');setShowForm(true)};
-  const openEdit=l=>{setForm({game:l.game,rolesNeeded:rolesOf(l),description:l.description||''});setEditId(l.id);setFerr('');setShowForm(true)};
-  const save=()=>{
-    if(!form.rolesNeeded||form.rolesNeeded.length===0){setFerr('Выбери хотя бы одну роль');return}
-    if(!form.description.trim()){setFerr('Добавь описание');return}
-    const data={game:form.game,rolesNeeded:form.rolesNeeded,description:form.description.trim()};
-    const fresh=ls.get('gv:li')||[];                       // берём свежий список (а не устаревший из стейта)
-    let upd=editId
-      ?fresh.map(l=>l.id===editId?{...l,...data}:l)
-      :[{id:uid(),userId:me.id,authorName:me.nickname,authorAvatar:me.avatar||null,...data,createdAt:now(),expiresAt:now()+30*60*1000,status:'active'},...fresh];
-    ls.set('gv:li',upd);
-    setListings(upd.filter(l=>l.status==='active'&&l.expiresAt>now()));
-    setShowForm(false);
-  };
-  const del=id=>{const fresh=ls.get('gv:li')||[];const upd=fresh.filter(l=>l.id!==id);ls.set('gv:li',upd);setListings(upd.filter(l=>l.status==='active'&&l.expiresAt>now()))};
-  const apply=l=>{
-    const ex=ls.get('gv:no:'+l.userId)||[];
-    if(ex.some(n=>n.type==='application'&&n.fromUserId===me.id&&n.listingGame===l.game)){alert('Ты уже отправил заявку на это объявление!');return}
-    const notif={id:uid(),userId:l.userId,type:'application',fromUserId:me.id,fromName:me.nickname,fromAvatar:me.avatar||null,listingGame:l.game,read:false,ts:now()};
-    ls.set('gv:no:'+l.userId,[notif,...ex]);
-    alert('Заявка отправлена! Ответ придёт в «события».');
-  };
-  const startChat=target=>{ensureChat(me,target,chats,setChats);goChat&&goChat(target.id)};
-
-  const LCard=({l,isMine})=>{
-    const author=users[l.userId]||{id:l.userId,nickname:l.authorName||'игрок',avatar:l.authorAvatar||null};
-    const mins=Math.max(0,Math.floor((l.expiresAt-now())/60000));
-    return(
-      <div className='card' style={{marginBottom:11}}>
-        <div style={{display:'flex',alignItems:'center',gap:11,marginBottom:12}}>
-          <div style={{cursor:isMine?'default':'pointer'}} onClick={()=>!isMine&&setViewUser(author)}>
-            <Avatar user={author} size={42} radius={12}/>
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{display:'flex',alignItems:'center',gap:7}}>
-              <span style={{fontSize:14.5,fontWeight:600,cursor:isMine?'default':'pointer',color:'var(--white)'}}
-                onClick={()=>!isMine&&setViewUser(author)}>
-                {author.nickname}
-              </span>
-            </div>
-            <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted2)',marginTop:2}}>{fmtTime(l.createdAt)}</div>
-          </div>
-          <div className='timer-b'><Icon n='clock' style={{fontSize:10,marginRight:3,verticalAlign:'-1px'}}/>{mins}м</div>
-        </div>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:11}}>
-          <span className='tag tg'>{l.game}</span>
-          {rolesOf(l).map(r=><span key={r} className='tag tr'>{r}</span>)}
-        </div>
-        <div style={{fontSize:14,color:'var(--muted)',lineHeight:1.6,marginBottom:14}}><Linkify text={l.description}/></div>
-        {isMine?(
-          <div style={{display:'flex',gap:8}}>
-            <button className='btn btn-g btn-sm' style={{flex:1}} onClick={()=>openEdit(l)}>Изменить</button>
-            <button className='btn btn-d btn-sm' style={{padding:'8px 12px'}} onClick={()=>del(l.id)}><Icon n='trash'/></button>
-          </div>
-        ):(
-          <div style={{display:'flex',gap:8}}>
-            <button className='btn btn-g btn-sm' style={{flex:1}} onClick={()=>setViewUser(author)}>Профиль</button>
-            <button className='btn btn-p btn-sm' style={{flex:2}} onClick={()=>apply(l)}>Подать заявку</button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return(
-    <div className='content-wrap'>
-      <div className='ph'><div className='ph-t'>Доска объявлений</div><button className='btn btn-p btn-sm' onClick={openCreate}>Создать</button></div>
-      <div className='hero'>
-        <div className='hero-glow'/>
-        <div className='hero-grid'/>
-        <div style={{position:'relative',zIndex:1}}>
-          <div className='hero-kicker'><span className='hero-live'/>LFG · LOOKING FOR GROUP</div>
-          <div className='hero-title'>Собери свой <span className='hero-accent'>отряд</span></div>
-          <div className='hero-sub'>Найди тиммейтов по игре, роли и характеру — без рандома и токсиков.</div>
-          <div className='hero-stats'>
-            <div className='hero-stat'><div className='hero-stat-v'>{playerCount}</div><div className='hero-stat-l'>игроков</div></div>
-            <div className='hero-stat'><div className='hero-stat-v'>{onlineCount}</div><div className='hero-stat-l'>онлайн</div></div>
-            <div className='hero-stat'><div className='hero-stat-v'>{others.length+mine.length}</div><div className='hero-stat-l'>анкет</div></div>
-          </div>
-        </div>
-      </div>
-      {mine.length>0&&<div style={{marginBottom:26}}><div className='sl'>мои объявления</div>{mine.map(l=><LCard key={l.id} l={l} isMine/>)}</div>}
-      <div className='sl'>активные · {others.length}</div>
-      {others.length===0
-        ?<div className='emp'><div className='emp-ic'><Icon n='clipboard-list'/></div><p>пока нет объявлений<br/>создай первое и собери отряд!</p></div>
-        :others.map(l=><LCard key={l.id} l={l} isMine={false}/>)}
-      {showForm&&<Modal title={editId?'Изменить объявление':'Новое объявление'} onClose={()=>setShowForm(false)}>
-        <div className='fg'><label className='fl'>Игра</label><select value={form.game} onChange={e=>setForm({...form,game:e.target.value,rolesNeeded:[]})}>{GAMES.map(g=><option key={g}>{g}</option>)}</select></div>
-        <div className='fg'><label className='fl'>Нужные роли / позиции</label>
-          <RolesPicker game={form.game} selected={form.rolesNeeded} onChange={v=>setForm(f=>({...f,rolesNeeded:v}))}/>
-        </div>
-        <div className='fg'><label className='fl'>Описание <span style={{color:'var(--muted2)'}}>({form.description.length}/140)</span></label><textarea placeholder='Кого ищешь и зачем...' value={form.description} maxLength={140} onChange={e=>setForm({...form,description:e.target.value})}/></div>
-        {ferr&&<p style={{color:'var(--pk)',fontSize:12,marginBottom:12,fontFamily:'var(--mono)'}}>{ferr}</p>}
-        <div style={{display:'flex',gap:8}}>
-          <button className='btn btn-g' style={{flex:1}} onClick={()=>setShowForm(false)}>Отмена</button>
-          <button className='btn btn-p' style={{flex:2}} onClick={save}>{editId?'Сохранить':'Опубликовать'}</button>
-        </div>
-      </Modal>}
-      {viewUser&&<UserModal user={viewUser} onClose={()=>setViewUser(null)} onChat={()=>startChat(viewUser)}/>}
-    </div>
-  );
-}
-
-/* ── CHATS ── */
-function ChatsScreen({me,users,chats,setChats,openChatId,clearOpenChat,mobile,startChat}){
-  const[activeId,setActiveId]=useState(null);
-  const[msgs,setMsgs]=useState({});
-  const[input,setInput]=useState('');
-  const[chatOpen,setChatOpen]=useState(false);
-  const[viewUser,setViewUser]=useState(null);
-  const endRef=useRef(null);
-  const msgsRef=useRef(null);
-  const pollRef=useRef(null);
-  const inpRef=useRef(null);
-
-  const loadMsgs=useCallback(cid=>{const m=ls.get('gv:ms:'+cid)||[];setMsgs(prev=>({...prev,[cid]:m}))},[]);
-
-  // открыть конкретный чат по запросу извне (из доски/событий)
-  useEffect(()=>{
-    if(openChatId){
-      const cid=[me.id,openChatId].sort().join('_');
-      setActiveId(cid);setChatOpen(true);loadMsgs(cid);clearOpenChat&&clearOpenChat();
-    }
-  },[openChatId]);
-
-  useEffect(()=>{
-    if(!activeId)return;
-    loadMsgs(activeId);
-    clearInterval(pollRef.current);
-    pollRef.current=setInterval(()=>loadMsgs(activeId),1500);
-    return()=>clearInterval(pollRef.current);
-  },[activeId,loadMsgs]);
-
-  // прокрутка только внутри области сообщений (не дёргает всю страницу)
-  const prevActive=useRef(null);
-  useEffect(()=>{
-    const el=msgsRef.current;if(!el)return;
-    const instant=prevActive.current!==activeId; // при открытии/смене чата — мгновенно, без анимации
-    prevActive.current=activeId;
-    el.scrollTo({top:el.scrollHeight,behavior:instant?'auto':'smooth'});
-  },[msgs,activeId]);
-
-  const send=()=>{
-    if(!input.trim()||!activeId)return;
-    const m={id:uid(),from:me.id,text:input.trim(),ts:now()};
-    const cur=[...(msgs[activeId]||[]),m];
-    setMsgs(prev=>({...prev,[activeId]:cur}));
-    ls.set('gv:ms:'+activeId,cur);
-    const upd=chats.map(c=>c.id===activeId?{...c,lastMsg:m.text,lastTs:m.ts}:c);
-    setChats(upd);ls.set('gv:ch:'+me.id,upd);
-    // зеркалим последнее сообщение и собеседнику
-    const ch=chats.find(c=>c.id===activeId);
-    const oid=ch?.participants?.find(p=>p!==me.id);
-    if(oid){const tc=(ls.get('gv:ch:'+oid)||[]).map(c=>c.id===activeId?{...c,lastMsg:m.text,lastTs:m.ts}:c);ls.set('gv:ch:'+oid,tc)}
-    setInput('');inpRef.current?.focus();
-  };
-
-  // имя/аватар собеседника: live-юзер -> снапшот в чате -> заглушка
-  const getOther=chat=>{
-    const oid=chat.participants?.find(p=>p!==me.id);
-    return users[oid]||chat.peers?.[oid]||{id:oid||'?',nickname:'игрок'};
-  };
-  const sorted=[...chats].sort((a,b)=>(b.lastTs||0)-(a.lastTs||0));
-  const curMsgs=activeId?(msgs[activeId]||[]):[];
-  const aChat=chats.find(c=>c.id===activeId);
-  const aOther=aChat?getOther(aChat):null;
-
-  return(
-    <div className={'chat-wrap'+(mobile?' mob':'')+(chatOpen?' chat-open':'')} style={{height:'100%'}}>
-      <div className='chat-list'>
-        <div style={{padding:'14px 16px 10px',fontFamily:'var(--mono)',fontSize:10,color:'var(--muted2)',letterSpacing:'.16em',textTransform:'uppercase',borderBottom:'1px solid var(--bd)'}}>чаты · {chats.length}</div>
-        {sorted.length===0
-          ?<div className='emp' style={{paddingTop:48}}><div className='emp-ic'><Icon n='message-2'/></div><p>пока нет чатов<br/>найди тиммейта в поиске</p></div>
-          :sorted.map(c=>{const ot=getOther(c);return(
-            <div key={c.id} className={'ci'+(c.id===activeId?' on':'')} onClick={()=>{setActiveId(c.id);setChatOpen(true);loadMsgs(c.id)}}>
-              <Avatar user={ot} size={44} radius={13}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:14,fontWeight:600}}>{ot.nickname}</span></div>
-                <div style={{fontSize:12.5,color:'var(--muted)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:2}}>{c.lastMsg||'нет сообщений'}</div>
-              </div>
-              <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted2)',flexShrink:0}}>{c.lastTs?fmtAgo(c.lastTs):''}</div>
-            </div>
-          )})}
-      </div>
-      <div className='chat-conv'>
-        {!aOther?<div className='emp' style={{margin:'auto'}}><div className='emp-ic'><Icon n='message-circle'/></div><p>выбери чат, чтобы начать общение</p></div>:<>
-          <div className='chat-hdr'>
-            {mobile&&<button className='btn btn-g btn-sm' onClick={()=>setChatOpen(false)}>Назад</button>}
-            <div className='chat-hdr-info' style={{display:'flex',alignItems:'center',gap:11}} onClick={()=>setViewUser(aOther)}>
-              <Avatar user={aOther} size={38} radius={11}/>
-              <div style={{minWidth:0}}><div className='chat-hdr-name'>{aOther.nickname}</div><div style={{fontFamily:'var(--mono)',fontSize:11,fontWeight:500,color:'var(--muted2)',marginTop:2}}>нажми, чтобы открыть профиль</div></div>
-            </div>
-            <button className='btn btn-g btn-sm' style={{marginLeft:'auto'}} onClick={()=>setViewUser(aOther)}>Профиль</button>
-          </div>
-          <div className='msgs-area' ref={msgsRef}>
-            {curMsgs.length===0&&<div style={{textAlign:'center',color:'var(--muted2)',fontSize:12,marginTop:24}}>Начало чата — скажи привет 👋</div>}
-            {curMsgs.map((m,i)=>{
-              const mine=m.from===me.id;
-              const prev=curMsgs[i-1];
-              const grp=prev&&prev.from===m.from&&(m.ts-prev.ts<120000);
-              return(
-                <div key={m.id} className={'mr'+(mine?' me':'')+(grp?' grp':'')}>
-                  {!mine&&<div style={{width:28,flexShrink:0}}>{!grp&&<Avatar user={aOther} size={28} radius={9}/>}</div>}
-                  <div className='mr-col'>
-                    <div className={'bub'+(mine?' mine':' them')}><Linkify text={m.text}/></div>
-                    <div className='mtime' style={{textAlign:mine?'right':'left'}}>{fmtTime(m.ts)}</div>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={endRef}/>
-          </div>
-          <div className='chat-inp-row'>
-            <textarea ref={inpRef} className='chat-inp' placeholder='Сообщение... (Enter — отправить)' rows={1} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}}/>
-            <button className='btn btn-p' style={{height:44,flexShrink:0,paddingLeft:16,paddingRight:16}} onClick={send}><Icon n='send' style={{fontSize:18}}/></button>
-          </div>
-        </>}
-      </div>
-      {viewUser&&<UserModal user={viewUser} onClose={()=>setViewUser(null)} onChat={viewUser.id!==me.id&&startChat?()=>startChat(viewUser):null} selfView={viewUser.id===me.id}/>}
-    </div>
-  );
-}
-
-/* ── ПОИСК ТИММЕЙТОВ (GACHA) ── */
-function FindScreen({me,users,chats,setChats,goChat}){
-  const[phase,setPhase]=useState('chest');
-  const[showTutorial,setShowTutorial]=useState(!ls.get('gv:tut:seen'));
-  const[pool,setPool]=useState([]);
-  const[idx,setIdx]=useState(0);
-  const[left,setLeft]=useState(10);
-  const[matched,setMatched]=useState(null);
-  const[shaking,setShaking]=useState(false);
-
-  // попытки привязаны к АККАУНТУ (через общий слой данных), а не к устройству
-  const opKey=()=>'gv:op:'+me.id+':'+new Date().toDateString();
-  useEffect(()=>{const used=+(ls.get(opKey())||0);setLeft(Math.max(0,10-used));},[me.id]);
-
-  const closeTutorial=()=>{ls.set('gv:tut:seen',true);setShowTutorial(false)};
-  const decrLeft=()=>{const used=+(ls.get(opKey())||0)+1;ls.set(opKey(),used);setLeft(Math.max(0,10-used))};
-
-  // очки совпадения: общие игры (главное) + близость радара + немного рандома
-  const myGames=(me.games||[]).map(g=>g.game);
-  const myRadar=me.radarValues||DA.map(a=>me.radar?.[a.key]||5);
-  const sharedGames=u=>{const ug=(u.games||[]).map(g=>g.game);return myGames.filter(g=>ug.includes(g))};
-  const scoreOf=u=>{
-    let s=0;
-    s+=sharedGames(u).length*10;                       // общие игры — сильнейший сигнал
-    const ur=u.radarValues||DA.map(a=>u.radar?.[a.key]||5);
-    let diff=0;for(let i=0;i<Math.min(myRadar.length,ur.length);i++)diff+=Math.abs((myRadar[i]||5)-(ur[i]||5));
-    s+=Math.max(0,6-diff/4);                            // чем ближе характер — тем больше очков
-    s+=Math.random()*3;                                 // лёгкая перетасовка, чтобы не приедалось
-    return s;
-  };
-
-  const openChest=()=>{
-    if(left<=0)return;
-    const real=Object.values(users).filter(u=>u.id!==me.id);
-    if(real.length===0){alert('Пока нет других игроков!\nОткрой приложение в другой вкладке и зарегистрируй второй аккаунт для теста, или зови друзей!');return}
-    const src=[...real].sort((a,b)=>scoreOf(b)-scoreOf(a)).slice(0,10);  // подбор по интересам
-    setPool(src);setIdx(0);decrLeft();setMatched(null);
-    setShaking(true);setTimeout(()=>{setShaking(false);setPhase('cards')},560);
-  };
-
-  const next=()=>{if(idx+1>=pool.length)setPhase('done');else setIdx(i=>i+1)};
-  const like=()=>{
-    const t=pool[idx];
-    const mlk=ls.get('gv:lk:'+me.id)||[];
-    if(!mlk.includes(t.id))ls.set('gv:lk:'+me.id,[...mlk,t.id]);
-    const tlk=ls.get('gv:lk:'+t.id)||[];
-    if(tlk.includes(me.id)){
-      // взаимный лайк → мэтч: открываем чат и уведомляем обоих
-      ensureChat(me,t,chats,setChats);
-      const tn=ls.get('gv:no:'+t.id)||[];
-      ls.set('gv:no:'+t.id,[{id:uid(),userId:t.id,type:'match',fromUserId:me.id,fromName:me.nickname,fromAvatar:me.avatar||null,read:false,ts:now()},...tn]);
-      setMatched(t);
-    } else {
-      // обычный лайк → уведомление другому игроку
-      const tn=ls.get('gv:no:'+t.id)||[];
-      ls.set('gv:no:'+t.id,[{id:uid(),userId:t.id,type:'like',fromUserId:me.id,fromName:me.nickname,fromAvatar:me.avatar||null,read:false,ts:now()},...tn]);
-    }
-    next();
-  };
-
-  const cur=pool[idx];
-  const curShared=cur?sharedGames(cur):[];
-  const ca=cur?.radarAxes||DA;
-  const cv=cur?.radarValues||ca.map(a=>cur?.radar?.[a.key]||5);
-
-  return(
-    <div className='content-wrap'>
-      {showTutorial&&<Tutorial onClose={closeTutorial}/>}
-      <div className='ph'>
-        <div className='ph-t'>Поиск тиммейтов</div>
-        <div style={{display:'flex',alignItems:'center',gap:9}}>
-          <button className='btn btn-g btn-sm' onClick={()=>setShowTutorial(true)}>Помощь</button>
-          <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted2)'}}>дропов: <span style={{color:'var(--pk)',fontWeight:700}}>{left}</span>/10</div>
-        </div>
-      </div>
-      {matched&&<div className='match-b fu'>
-        <Avatar user={matched} size={44} radius={13}/>
-        <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,fontFamily:'var(--sans)'}}>Мэтч с {matched.nickname}! 🎉</div><div style={{fontSize:13,color:'var(--muted)',marginTop:2}}>Чат уже открыт — напиши первым</div></div>
-        <button className='btn btn-p btn-sm' onClick={()=>goChat&&goChat(matched.id)}>Открыть</button>
-      </div>}
-      <div className='gacha-c'>
-        {phase==='chest'&&<>
-          <button className={'lootbox-stage'+(left>0?' open-ready':' depleted')} onClick={openChest} disabled={left<=0} aria-label='Открыть дроп'>
-            <div className='lootbox-glow'/>
-            <div className='lootbox-grid'/>
-            <div className='lootbox-ring'/>
-            <svg className='chest-svg' width='230' height='230' viewBox='0 0 152 152' style={{animation:shaking?'shake .55s':'chestFloat 4s ease-in-out infinite'}}>
-              <defs>
-                <linearGradient id='cg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stopColor='#FF3D7F'/><stop offset='.5' stopColor='#FF5C9A'/><stop offset='1' stopColor='#7C6CFF'/></linearGradient>
-                <linearGradient id='cgGold' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stopColor='#FFD66B'/><stop offset='1' stopColor='#FFB454'/></linearGradient>
-              </defs>
-              <ellipse cx='76' cy='138' rx='46' ry='7' fill='rgba(124,108,255,.25)'/>
-              <rect x='16' y='77' width='120' height='59' rx='13' fill='#1a1a24' stroke='url(#cg)' strokeWidth='2'/>
-              <rect x='16' y='30' width='120' height='49' rx='13' fill='#23232f' stroke='url(#cg)' strokeWidth='2'/>
-              <rect x='55' y='66' width='42' height='22' rx='7' fill='#0f0f16' stroke='url(#cgGold)' strokeWidth='2'/>
-              <circle cx='76' cy='77' r='8' fill='#2a1a26' stroke='url(#cgGold)' strokeWidth='2'/>
-              <circle cx='76' cy='77' r='3.5' fill='#FFD66B'/>
-              <rect x='28' y='49' width='96' height='4' rx='2' fill='#15151c'/>
-              <rect x='28' y='49' width={`${(10-left)/10*96}`} height='4' rx='2' fill='url(#cg)'/>
-              {[[55,90],[71,90],[87,90],[55,106],[71,106],[87,106]].map(([x,y],i)=><rect key={i} x={x} y={y} width='10' height='10' rx='2' fill='#16161e' stroke='#34343f' strokeWidth='1'/>)}
-              <line x1='16' y1='79' x2='136' y2='79' stroke='url(#cg)' strokeWidth='1.5' opacity='.5'/>
-            </svg>
-            {left>0&&<div className='lootbox-tap'><Icon n='box' style={{fontSize:15}}/> нажми, чтобы открыть</div>}
-          </button>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontFamily:'var(--sans)',fontWeight:700,fontSize:20,color:'#fff',letterSpacing:'-.01em',marginBottom:6}}>Дроп тиммейтов</div>
-            <div style={{fontSize:13.5,color:'var(--muted)',lineHeight:1.55,maxWidth:300,margin:'0 auto'}}>Подбираем игроков под твои интересы. Листай, лайкай и лови мэтч.</div>
-          </div>
-          <div className='drop-tries'>
-            {Array.from({length:10}).map((_,i)=><span key={i} className={'drop-pip'+(i<left?' on':'')}/>)}
-          </div>
-          <div className='lootbox-meta'><Icon n='bolt' style={{color:'var(--amber)'}}/> {left>0?('осталось попыток: '+left+' / 10'):'на сегодня лимит исчерпан — загляни завтра'}</div>
-        </>}
-        {phase==='cards'&&cur&&<>
-          <div className='gp-dots'>{pool.map((_,i)=><div key={i} className='gp-dot' style={{background:i<=idx?'var(--pk)':'#22222c',opacity:i<=idx?1:.4}}/>)}</div>
-          <div className='card pop' style={{width:'100%',maxWidth:400}}>
-            <div style={{display:'flex',gap:15,marginBottom:16}}>
-              <Avatar user={cur} size={60} radius={17}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
-                  <div style={{fontSize:17,fontWeight:600,fontFamily:'var(--sans)'}}>{cur.nickname}</div>
-                  {curShared.length>0&&<span className='match-pill'><Icon n='bolt' style={{fontSize:11}}/>{curShared.length} {curShared.length===1?'общая игра':'общих игр'}</span>}
-                </div>
-                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>{(cur.games||[]).map(g=><span key={g.game} className={'tag '+(curShared.includes(g.game)?'tg-match':'tg')}>{curShared.includes(g.game)&&'★ '}{g.game}</span>)}</div>
-                <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:6}}>{(cur.games||[])[0]?.roles?.slice(0,3).map(r=><span key={r} className='tag tr'>{r}</span>)}</div>
-              </div>
-            </div>
-            <div style={{display:'flex',gap:15,alignItems:'center'}}>
-              <RadarSvg axes={ca} values={cv} size={92}/>
-              <div style={{flex:1}}>{ca.map((ax,i)=><div key={ax.key} className='rb'><div className='rbn' style={{color:ax.color}}>{ax.label}</div><div className='rbt'><div className='rbf' style={{width:(cv[i]||5)*10+'%',background:ax.color}}/></div><div className='rbv' style={{color:ax.color}}>{cv[i]||5}</div></div>)}</div>
-            </div>
-          </div>
-          <div className='g-actions'>
-            <button className='g-skip' onClick={next}>Пропустить</button>
-            <button className='g-like' onClick={like}>В отряд</button>
-          </div>
-          <div className='lootbox-meta'><Icon n='bolt' style={{color:'var(--amber)'}}/> анкета {idx+1} из {pool.length} · осталось дропов: {left}/10</div>
-        </>}
-        {phase==='done'&&<>
-          <div style={{fontSize:46}}>🎮</div>
-          <div style={{fontSize:17,fontWeight:700,fontFamily:'var(--sans)'}}>Колода просмотрена!</div>
-          <div style={{fontSize:13,color:'var(--muted)'}}>Осталось дропов сегодня: {left}/10</div>
-          {left>0&&<button className='btn btn-p' onClick={()=>{setPhase('chest');setMatched(null)}}>Открыть ещё</button>}
-        </>}
-      </div>
-    </div>
-  );
-}
-
-/* ── NOTIFICATIONS ── */
-function NotifsScreen({me,users,notifs,setNotifs,chats,setChats,goChat}){
-  const[viewUser,setViewUser]=useState(null);
-  const peerFrom=n=>users[n.fromUserId]||{id:n.fromUserId,nickname:n.fromName||'игрок',avatar:n.fromAvatar||null};
-  const startChat=t=>{ensureChat(me,t,chats,setChats);goChat&&goChat(t.id)};
-  // помечаем все как прочитанные при открытии экрана — значок «новых» сразу пропадает
-  useEffect(()=>{
-    const cur=ls.get('gv:no:'+me.id)||[];
-    if(cur.some(n=>!n.read)){const upd=cur.map(n=>({...n,read:true}));ls.set('gv:no:'+me.id,upd);setNotifs(upd);}
-  },[]);
-  const writeNotifs=upd=>{ls.set('gv:no:'+me.id,upd);setNotifs(upd);};
-  const accept=n=>{const t=peerFrom(n);ensureChat(me,t,chats,setChats);writeNotifs((ls.get('gv:no:'+me.id)||[]).map(x=>x.id===n.id?{...x,accepted:true,read:true}:x));goChat&&goChat(n.fromUserId)};
-  const likeback=n=>{const t=peerFrom(n);ensureChat(me,t,chats,setChats);const mn={id:uid(),userId:n.fromUserId,type:'match',fromUserId:me.id,fromName:me.nickname,fromAvatar:me.avatar||null,read:false,ts:now()};const tn=ls.get('gv:no:'+n.fromUserId)||[];ls.set('gv:no:'+n.fromUserId,[mn,...tn]);writeNotifs((ls.get('gv:no:'+me.id)||[]).map(x=>x.id===n.id?{...x,likedback:true,read:true}:x))};
-  const dismiss=id=>{writeNotifs((ls.get('gv:no:'+me.id)||[]).map(x=>x.id===id?{...x,dismissed:true,read:true}:x))};
-  const visible=notifs.filter(n=>!n.dismissed);
-  const unread=notifs.filter(n=>!n.read&&!n.dismissed).length;
-  return(
-    <div className='content-wrap'>
-      <div className='ph'><div className='ph-t'>Уведомления</div>{visible.length>0&&<button className='btn btn-g btn-sm' onClick={()=>writeNotifs((ls.get('gv:no:'+me.id)||[]).map(n=>({...n,dismissed:true,read:true})))}>Очистить всё</button>}</div>
-      {visible.length===0?<div className='emp'><div className='emp-ic'><Icon n='bell'/></div><p>пока тихо<br/>здесь появятся заявки и мэтчи</p></div>
-      :visible.map(n=>{
-        const from=peerFrom(n);
-        let badge='user-plus',bbg='var(--pk)',text=null;
-        if(n.type==='application')text=<><span className='notif-name' onClick={()=>setViewUser(from)}>{from.nickname}</span> хочет в твой отряд ({n.listingGame})</>;
-        if(n.type==='like'){badge='heart-filled';bbg='var(--purple)';text=<><span className='notif-name' onClick={()=>setViewUser(from)}>{from.nickname}</span> лайкнул тебя в поиске</>}
-        if(n.type==='match'){badge='confetti';bbg='var(--green)';text=<>Мэтч с <span className='notif-name' onClick={()=>setViewUser(from)}>{from.nickname}</span>! 🎉</>}
-        const isUnread=!n.read;
-        return(
-          <div key={n.id} className={'notif-row'+(isUnread?' unread':'')}>
-            <div className='notif-icon' style={{background:'transparent',padding:0}} onClick={()=>setViewUser(from)}>
-              <Avatar user={from} size={44} radius={13}/>
-              <div style={{position:'absolute',bottom:-3,right:-3,width:18,height:18,borderRadius:6,background:bbg,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid var(--card)'}}><Icon n={badge} style={{fontSize:10,color:'#fff'}}/></div>
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,color:'var(--muted)',lineHeight:1.5,marginBottom:10,paddingRight:24}}>{text}</div>
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:4}}>
-                <button className='btn btn-g btn-sm' onClick={()=>setViewUser(from)}>Профиль</button>
-                {n.type==='application'&&!n.accepted&&<><button className='btn btn-p btn-sm' onClick={()=>accept(n)}>Принять</button><button className='btn btn-g btn-sm' onClick={()=>dismiss(n.id)}>Отклонить</button></>}
-                {n.type==='application'&&n.accepted&&<button className='btn btn-p btn-sm' onClick={()=>startChat(from)}>Чат</button>}
-                {n.type==='like'&&!n.likedback&&<><button className='btn btn-p btn-sm' onClick={()=>likeback(n)}>Лайк в ответ</button><button className='btn btn-g btn-sm' onClick={()=>dismiss(n.id)}>Пропустить</button></>}
-                {n.type==='like'&&n.likedback&&<button className='btn btn-p btn-sm' onClick={()=>startChat(from)}>Чат</button>}
-                {n.type==='match'&&<button className='btn btn-p btn-sm' onClick={()=>{ensureChat(me,from,chats,setChats);goChat&&goChat(n.fromUserId)}}>Открыть чат</button>}
-              </div>
-              <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted2)',marginTop:6}}>{fmtAgo(n.ts)}</div>
-            </div>
-            <button className='notif-x' onClick={()=>dismiss(n.id)} title='Скрыть'><Icon n='x' style={{fontSize:14}}/></button>
-          </div>
-        );
-      })}
-      {viewUser&&<UserModal user={viewUser} onClose={()=>setViewUser(null)} onChat={()=>startChat(viewUser)}/>}
-    </div>
-  );
-}
-
-/* ── PROFILE ── */
-function ProfileScreen({me,setMe,onLogout,onDelete,chats,mobile}){
-  const[editing,setEditing]=useState(false);
-  const[confirmDel,setConfirmDel]=useState(false);
-  const[form,setForm]=useState({nickname:me.nickname,avatar:me.avatar||null,games:me.games||[],axes:(me.radarAxes||DA).map(a=>({...a})),vals:me.radarValues||(me.radarAxes||DA).map(a=>me.radar?.[a.key]||5)});
-  const save=()=>{
-    if(!form.nickname.trim())return;
-    const upd={...me,nickname:form.nickname.trim(),avatar:form.avatar,games:form.games,radarAxes:form.axes,radarValues:form.vals,radar:Object.fromEntries(form.axes.map((a,i)=>[a.key,form.vals[i]]))};
-    setMe(upd);ls.set('gv:me',upd);ls.set('gv:u:'+me.id,upd);setEditing(false);
-  };
-  const axes=me.radarAxes||DA;
-  const vals=me.radarValues||axes.map(a=>me.radar?.[a.key]||5);
-  const gamesCount=(me.games||[]).length;
-  const rolesCount=(me.games||[]).reduce((s,g)=>s+(g.roles?.length||0),0);
-  const chatCount=(chats||[]).length;
-
-  if(editing)return(
-    <div className='content-wrap'>
-      <div className='ph'><div className='ph-t'>Редактировать</div><button className='btn btn-g btn-sm' onClick={()=>setEditing(false)}>Отмена</button></div>
-      <div style={{display:'flex',alignItems:'flex-start',gap:18,marginBottom:22}}>
-        <AvatarUpload user={{...me,nickname:form.nickname,avatar:form.avatar}} size={72} radius={20} onUpload={s=>setForm(f=>({...f,avatar:s}))} hint={true}/>
-        <div style={{flex:1}}><label className='fl'>Никнейм</label><input value={form.nickname} onChange={e=>setForm(f=>({...f,nickname:e.target.value}))}/></div>
-      </div>
-      <div className='sl'>игры и роли</div>
-      {form.games.map((g,i)=><div key={i} className='card2' style={{marginBottom:10}}>
-        <div style={{display:'flex',gap:8,marginBottom:10}}>
-          <select value={g.game} onChange={e=>{const ng=[...form.games];ng[i]={...ng[i],game:e.target.value,roles:[]};setForm(f=>({...f,games:ng}))}} style={{flex:1}}>{GAMES.map(gm=><option key={gm}>{gm}</option>)}</select>
-          {form.games.length>1&&<button className='btn btn-g btn-sm' style={{padding:'8px 11px'}} onClick={()=>setForm(f=>({...f,games:f.games.filter((_,j)=>j!==i)}))}><Icon n='trash'/></button>}
-        </div>
-        <label className='fl'>Роли</label>
-        <RolesPicker game={g.game} selected={g.roles} onChange={v=>{const ng=[...form.games];ng[i]={...ng[i],roles:v};setForm(f=>({...f,games:ng}))}}/>
-      </div>)}
-      <button className='btn btn-g btn-sm btn-fw' style={{marginBottom:22}} onClick={()=>setForm(f=>({...f,games:[...f.games,{game:'CS2',roles:[]}]}))}>Добавить игру</button>
-      <div className='sl'>радар характера</div>
-      <div style={{display:'flex',gap:16,marginBottom:14,alignItems:'center'}}><RadarSvg axes={form.axes} values={form.vals} size={96}/><div style={{flex:1}}><RadarSliders axes={form.axes} values={form.vals} onChange={v=>setForm(f=>({...f,vals:v}))}/></div></div>
-      <div className='card2' style={{marginBottom:22}}><AxisEditor axes={form.axes} onChange={a=>setForm(f=>({...f,axes:a}))}/></div>
-      <button className='btn btn-p btn-fw' onClick={save}>Сохранить изменения</button>
-    </div>
-  );
-
-  return(
-    <div className={'content-wrap'+(mobile?' prof-compact':'')}>
-      <div className='ph'><div className='ph-t'>Профиль</div><button className='btn btn-g btn-sm' onClick={()=>setEditing(true)}>Изменить</button></div>
-      <div className='prof-hero'>
-        <Avatar user={me} size={mobile?60:72} radius={mobile?18:21}/>
-        <div style={{flex:1,minWidth:0,position:'relative',zIndex:1}}>
-          <div style={{fontSize:20,fontWeight:700,fontFamily:'var(--sans)',letterSpacing:'-.01em'}}>{me.nickname}</div>
-          <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--muted2)',letterSpacing:'.06em',marginTop:4}}>участник с {new Date(me.createdAt).toLocaleDateString('ru')}</div>
-          <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--green)',marginTop:4}}>● онлайн</div>
-        </div>
-      </div>
-      <div style={{display:'flex',gap:10,marginBottom:16}}>
-        <div className='stat-card'><div className='stat-val'>{gamesCount}</div><div className='stat-label'>игр</div></div>
-        <div className='stat-card'><div className='stat-val'>{rolesCount}</div><div className='stat-label'>ролей</div></div>
-        <div className='stat-card'><div className='stat-val'>{chatCount}</div><div className='stat-label'>чатов</div></div>
-      </div>
-      <div className='card' style={{marginBottom:14}}>
-        <div className='sl'>игры и роли</div>
-        {gamesCount===0&&<span style={{fontSize:12,color:'var(--muted2)',fontFamily:'var(--mono)'}}>не указаны</span>}
-        {(me.games||[]).map((g,i)=>(
-          <div key={i} style={{marginBottom:i<(me.games.length-1)?16:0}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-              <span className='tag tg'>{g.game}</span>
-            </div>
-            {g.roles?.length>0
-              ?<div style={{display:'flex',gap:5,flexWrap:'wrap',paddingLeft:2}}>{g.roles.map(r=><span key={r} className='tag tr'>{r}</span>)}</div>
-              :<span style={{fontSize:12,color:'var(--muted2)',fontFamily:'var(--mono)',paddingLeft:2}}>роли не указаны</span>
+function Onboarding({ onDone, onBack }) {
+    const [step, setStep] = useState(0);
+    const [nick, setNick] = useState('');
+    const [avatar, setAvatar] = useState(null);
+    const [games, setGames] = useState([{ game: 'Valorant', roles: [] }]);
+    const [axes, setAxes] = useState(DA.map(a => ({ ...a })));
+    const [vals, setVals] = useState([6, 6, 6, 6]);
+    const [err, setErr] = useState('');
+    const next = () => {
+        if (step === 0) {
+            if (!nick.trim()) {
+                setErr('Введи никнейм');
+                return;
             }
-          </div>
-        ))}
-      </div>
-      <div className='card' style={{marginBottom:18}}>
-        <div className='sl'>радар характера</div>
-        <div style={{display:'flex',gap:16,alignItems:'center'}}>
-          <RadarSvg axes={axes} values={vals} size={mobile?84:96}/>
-          <div style={{flex:1}}>{axes.map((ax,i)=><div key={ax.key} className='rb'><div className='rbn' style={{color:ax.color}}>{ax.label}</div><div className='rbt'><div className='rbf' style={{width:vals[i]*10+'%',background:ax.color}}/></div><div className='rbv' style={{color:ax.color}}>{vals[i]}</div></div>)}</div>
-        </div>
-      </div>
-      <div style={{display:'flex',gap:8}}>
-        <button className='btn btn-g' style={{flex:1}} onClick={onLogout}>Выйти</button>
-        <button className='btn btn-d' style={{flex:1}} onClick={()=>setConfirmDel(true)}>Удалить аккаунт</button>
-      </div>
-      {confirmDel&&<Modal title='Удалить аккаунт?' onClose={()=>setConfirmDel(false)} maxW={400}>
-        <p style={{fontSize:14,color:'var(--muted)',lineHeight:1.6,marginBottom:20}}>Это действие необратимо. Профиль, чаты, объявления и история лайков будут удалены навсегда.</p>
-        <div style={{display:'flex',gap:8}}>
-          <button className='btn btn-g' style={{flex:1}} onClick={()=>setConfirmDel(false)}>Отмена</button>
-          <button className='btn btn-d' style={{flex:1,borderColor:'var(--pk)'}} onClick={onDelete}>Удалить навсегда</button>
-        </div>
-      </Modal>}
-    </div>
-  );
-}
-
-/* ── NAV ── */
-const NAV=[
-  {key:'chats',icon:'message-2',label:'чаты'},
-  {key:'board',icon:'clipboard-list',label:'доска'},
-  {key:'find',icon:'users',label:'поиск',dot:true},
-  {key:'notifs',icon:'bell',label:'события'},
-  {key:'profile',icon:'user',label:'профиль'},
-];
-const TITLES={chats:'Чаты',board:'Доска объявлений',find:'Поиск тиммейтов',notifs:'Уведомления',profile:'Профиль'};
-
-/* ── ROOT ── */
-function App(){
-  const[auth,setAuth]=useState('loading');
-  const[me,setMe]=useState(null);
-  const[tab,setTab]=useState('board');
-  const[users,setUsers]=useState({});
-  const[listings,setListings]=useState([]);
-  const[chats,setChats]=useState([]);
-  const[notifs,setNotifs]=useState([]);
-  const[openChatId,setOpenChatId]=useState(null);
-  const[profileUser,setProfileUser]=useState(null);
-  // PREVIEW=true показывает панель «Десктоп/Мобилка» + рамку телефона (для просмотра обеих версий).
-  // В реальном деплое (без ?preview) панели нет: версия выбирается сама по ширине экрана.
-  const PREVIEW=(typeof window!=='undefined')&&(/[?&]preview\b/.test(window.location.search)||/preview/i.test(window.location.pathname));
-  const detectMobile=()=>{
-    if(typeof window==='undefined')return false;
-    const w=window.innerWidth;
-    if(w<=768)return true;
-    // большой телефон/ландшафт: трогабельный экран с грубым указателем и не очень широкий
-    const coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
-    const touch=('ontouchstart'in window)||navigator.maxTouchPoints>0;
-    return (coarse||touch)&&w<=1024;
-  };
-  const[vw,setVw]=useState(typeof window!=='undefined'?window.innerWidth:1280);
-  const[pvMode,setPvMode]=useState(detectMobile()?'mobile':'desktop');
-  useEffect(()=>{
-    if(PREVIEW)return; // в превью режим выбирается кнопками
-    const onR=()=>setVw(window.innerWidth);
-    window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);
-  },[PREVIEW]);
-  const isMobile=PREVIEW?(pvMode==='mobile'):detectMobile();
-  const pingRef=useRef(null);
-  const pollRef=useRef(null);
-  const[tick,setTick]=useState(0);
-  useEffect(()=>{ onCacheChange=()=>setTick(t=>t+1); initBackend(); return()=>{onCacheChange=null}; },[]);
-  useEffect(()=>{ if(me&&auth==='app') loadAll(me); },[tick]);
-
-  useEffect(()=>{const saved=ls.get('gv:me');if(saved){setMe(saved);loadAll(saved);setAuth('app')}else setAuth('loggedOut')},[]);
-
-  const loadAll=my=>{
-    setChats(ls.get('gv:ch:'+my.id)||[]);
-    setNotifs(ls.get('gv:no:'+my.id)||[]);
-    setListings((ls.get('gv:li')||[]).filter(l=>l.status==='active'&&l.expiresAt>now()));
-    refreshUsers(my);
-  };
-
-  const refreshUsers=my=>{
-    const all={};
-    ls.list('gv:u:').forEach(k=>{const u=ls.get(k);if(u)all[u.id]=u});
-    Object.keys(all).forEach(id=>{all[id]._online=isOnline(id)});
-    if(my)all[my.id]={...all[my.id]||my,_online:true};
-    setUsers(all);
-  };
-
-  useEffect(()=>{
-    if(!me||auth!=='app')return;
-    pingOnline(me.id);
-    pingRef.current=setInterval(()=>pingOnline(me.id),28000);
-    pollRef.current=setInterval(async ()=>{
-      await refreshFromDB();   // подтянуть свежие данные из базы (новые анкеты, лайки, сообщения)
-      setChats(ls.get('gv:ch:'+me.id)||[]);
-      setNotifs(ls.get('gv:no:'+me.id)||[]);
-      setListings((ls.get('gv:li')||[]).filter(l=>l.status==='active'&&l.expiresAt>now()));
-      refreshUsers(me);
-    },5000);
-    return()=>{clearInterval(pingRef.current);clearInterval(pollRef.current)};
-  },[me?.id,auth]);
-
-  const handleLogin=user=>{setMe(user);loadAll(user);setAuth('app');setTab('board')};
-  const handleLogout=()=>{ls.del('gv:me');setMe(null);setAuth('loggedOut')};
-  const handleDelete=()=>{
-    if(!me)return;
-    ls.del('gv:u:'+me.id);ls.del('gv:me');ls.del('gv:on:'+me.id);
-    ls.del('gv:ch:'+me.id);ls.del('gv:no:'+me.id);ls.del('gv:lk:'+me.id);
-    // убрать мои объявления с общей доски
-    const li=(ls.get('gv:li')||[]).filter(l=>l.userId!==me.id);ls.set('gv:li',li);
-    setMe(null);setChats([]);setNotifs([]);setListings([]);setUsers({});
-    setAuth('loggedOut');
-  };
-
-  const goChat=id=>{setOpenChatId(id);setTab('chats')};
-
-  const unread=notifs.filter(n=>!n.read&&!n.dismissed).length;
-
-  const startChatGlobal=target=>{ensureChat(me,target,chats,setChats);goChat&&goChat(target.id)};
-  const renderContent=(mobile=false)=>{
-    switch(tab){
-      case'chats':  return<ChatsScreen me={me} users={users} chats={chats} setChats={setChats} openChatId={openChatId} clearOpenChat={()=>setOpenChatId(null)} mobile={mobile} startChat={startChatGlobal}/>;
-      case'board':  return<BoardScreen me={me} users={users} listings={listings} setListings={setListings} chats={chats} setChats={setChats} goChat={goChat}/>;
-      case'find':   return<FindScreen me={me} users={users} chats={chats} setChats={setChats} goChat={goChat}/>;
-      case'notifs': return<NotifsScreen me={me} users={users} notifs={notifs} setNotifs={setNotifs} chats={chats} setChats={setChats} goChat={goChat}/>;
-      case'profile':return<ProfileScreen me={me} setMe={setMe} onLogout={handleLogout} onDelete={handleDelete} chats={chats} mobile={mobile}/>;
+            const taken = ls.list('gv:u:').map(k => ls.get(k)).some(u => u && u.nickname.toLowerCase() === nick.trim().toLowerCase());
+            if (taken) {
+                setErr('Такой ник уже занят — выбери другой');
+                return;
+            }
+        }
+        setErr('');
+        setStep(s => s + 1);
+    };
+    const done = () => {
+        const id = uid();
+        const user = { id, nickname: nick.trim(), avatar, games, radarAxes: axes, radarValues: vals,
+            radar: Object.fromEntries(axes.map((a, i) => [a.key, vals[i]])), createdAt: now() };
+        ls.set('gv:me', user);
+        ls.set('gv:u:' + id, user);
+        ls.set('gv:op:' + id + ':' + new Date().toDateString(), 0); // у нового аккаунта всегда полная энергия дропа
+        onDone(user);
+    };
+    const back = () => { if (step === 0) {
+        onBack && onBack();
     }
-  };
-
-  if(!CONFIGURED)return(
-    <div className='ob'><div className='ob-b' style={{maxWidth:520}}>
-      <div className='logo' style={{fontSize:20,marginBottom:8}}>ГГВП</div>
-      <div className='ob-sub' style={{marginBottom:20}}>БЭКЕНД-ВЕРСИЯ · НУЖНА НАСТРОЙКА</div>
-      <div style={{fontSize:14,color:'var(--white)',lineHeight:1.6,marginBottom:14,fontFamily:'var(--sans)',fontWeight:600}}>Подключи бесплатную базу Supabase</div>
-      <div style={{fontSize:13.5,color:'var(--muted)',lineHeight:1.8}}>
-        1. Зарегистрируйся на <span style={{color:'var(--cy-soft)'}}>supabase.com</span>, создай проект.<br/>
-        2. В <b style={{color:'#fff'}}>SQL Editor</b> выполни скрипт из <b style={{color:'#fff'}}>КАК_ЗАПУСТИТЬ.md</b>.<br/>
-        3. В <b style={{color:'#fff'}}>Settings → API</b> скопируй <b style={{color:'#fff'}}>Project URL</b> и <b style={{color:'#fff'}}>anon key</b>.<br/>
-        4. Вставь их в начало файла (SUPABASE_URL и SUPABASE_ANON_KEY) и перезагрузи.
-      </div>
-      <div style={{marginTop:18,padding:14,borderRadius:12,background:'var(--card2)',border:'1px solid var(--bd)',fontFamily:'var(--mono)',fontSize:12,color:'var(--muted)',lineHeight:1.7}}>Полная пошаговая инструкция — в файле КАК_ЗАПУСТИТЬ.md из архива.</div>
-    </div></div>
-  );
-  if(auth==='loading')return<div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--mono)',color:'var(--muted2)',fontSize:12,letterSpacing:'.12em'}}>загрузка...</div>;
-  if(auth==='loggedOut')return<LoginScreen onLogin={handleLogin} onRegister={()=>setAuth('onboarding')}/>;
-  if(auth==='onboarding')return<Onboarding onDone={u=>{setMe(u);loadAll(u);setAuth('app');setTab('board')}} onBack={()=>setAuth('loggedOut')}/>;
-
-  const PvBar=()=>(PREVIEW?
-    <div className='pv-bar'>
-      <span className='pv-lbl'>ПРЕДПРОСМОТР:</span>
-      <button className={'pv-btn'+(pvMode==='desktop'?' on':'')} onClick={()=>setPvMode('desktop')}>Десктоп</button>
-      <button className={'pv-btn'+(pvMode==='mobile'?' on':'')} onClick={()=>setPvMode('mobile')}>Мобилка</button>
-    </div>:null
-  );
-
-  /* ── MOBILE ── (в превью — в рамке телефона; в реале — на весь экран)
-     ВАЖНО: это обычный JSX в дереве App, а не вложенный компонент —
-     иначе React пересоздавал бы поддерево на каждый рендер и сбрасывал
-     состояние экранов (из-за этого раньше «вылетали» доска/поиск). */
-  const chatFull=tab==='chats';
-  const mobileView=(
-    <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
-      {!chatFull&&<div style={{display:'flex',height:56,padding:'0 16px',alignItems:'center',borderBottom:'1px solid var(--bd)',background:'var(--dark2)',flexShrink:0}}>
-        <div className='logo' style={{fontSize:15}}>ГГВП</div>
-      </div>}
-      <div style={{flex:1,overflow:chatFull?'hidden':'auto',padding:chatFull?0:'16px 15px 6px',minHeight:0}}>
-        {renderContent(true)}
-      </div>
-      <div className='mnav'>
-        {NAV.map(n=>{
-          const on=tab===n.key;
-          const showDot=(n.key==='notifs'&&unread>0)||(n.dot&&!on);
-          return(
-            <button key={n.key} className={'mnav-i'+(on?' on':'')} onClick={()=>{setTab(n.key);if(n.key!=='chats')setOpenChatId(null)}}>
-              <span className='mnav-ic'>
-                <Icon n={n.icon} style={{fontSize:23}}/>
-                {showDot&&<span className='mnav-dot'/>}
-              </span>
-              {on&&<span className='mnav-lbl'>{n.label}</span>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  if(isMobile){
-    if(!PREVIEW)return <div className='mobile-root'>{mobileView}{profileUser&&<UserModal user={profileUser} onClose={()=>setProfileUser(null)} onChat={()=>{startChatGlobal(profileUser);setProfileUser(null)}}/>}</div>;
-    return(
-      <div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#050507',overflow:'hidden'}}>
-        <PvBar/>
-        <div style={{flex:1,display:'flex',justifyContent:'center',alignItems:'flex-start',padding:'20px 0',overflowY:'auto'}}>
-          <div style={{width:390,height:800,borderRadius:42,overflow:'hidden',border:'1.5px solid #2a2a34',boxShadow:'0 24px 80px rgba(0,0,0,.9)',background:'var(--dark)',display:'flex',flexDirection:'column',flexShrink:0}}>
-            {mobileView}
-          </div>
-        </div>
-        {profileUser&&<UserModal user={profileUser} onClose={()=>setProfileUser(null)} onChat={()=>{startChatGlobal(profileUser);setProfileUser(null)}}/>}
-      </div>
-    );
-  }
-
-  /* ── DESKTOP ── */
-  return(
-    <div style={{height:'100vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <PvBar/>
-      <div style={{flex:1,overflow:'hidden',display:'flex'}}>
-        <div className='app-shell' style={{flex:1}}>
-          <aside className='sb'>
-            <div className='sb-head'>
-              <div className='logo' style={{fontSize:17}}>ГГВП</div>
-              <div className='sb-tagline'>поиск тиммейтов</div>
-            </div>
-            <nav className='sb-nav'>
-              {NAV.map(n=>(
-                <button key={n.key} className={'nb'+(tab===n.key?' on':'')} onClick={()=>{setTab(n.key);if(n.key!=='chats')setOpenChatId(null)}}>
-                  <span className='nb-ic'><Icon n={n.icon} style={{fontSize:19}}/></span>{n.label}
-                  {n.key==='notifs'&&unread>0&&<span className='nb-badge'>{unread}</span>}
-                  {n.dot&&<span className='nb-dot'/>}
-                </button>
-              ))}
-            </nav>
-            <div className='sb-cta' onClick={()=>setTab('find')}>
-              <div className='sb-cta-glow'/>
-              <div style={{position:'relative',zIndex:1}}>
-                <div className='sb-cta-ic'><Icon n='cards'/></div>
-                <div className='sb-cta-t'>Дроп тиммейтов</div>
-                <div className='sb-cta-s'>Открой подборку игроков и найди мэтч</div>
-                <div className='sb-cta-btn'>Открыть <Icon n='arrow-right' style={{fontSize:13}}/></div>
-              </div>
-            </div>
-          </aside>
-
-          <div className='main-col'>
-            <div className='desk-hdr'>
-              <div className='desk-hdr-title'><span className='tdot'/>{TITLES[tab]||''}</div>
-              <div className='desk-hdr-right'>
-                {unread>0&&<button className='btn btn-g btn-sm' onClick={()=>setTab('notifs')}><Icon n='bell'/> <span className='badge'>{unread}</span></button>}
-                {tab!=='profile'&&<div style={{display:'flex',alignItems:'center',gap:10,padding:'7px 13px',borderRadius:12,cursor:'pointer',transition:'background .15s',background:'var(--card)',border:'1px solid var(--bd)'}} onClick={()=>setTab('profile')} onMouseEnter={e=>e.currentTarget.style.background='var(--card2)'} onMouseLeave={e=>e.currentTarget.style.background='var(--card)'}>
-                  <Avatar user={me} size={30} radius={9}/>
-                  <div><div style={{fontSize:13,fontWeight:600,lineHeight:1.2}}>{me.nickname}</div><div style={{fontFamily:'var(--mono)',fontSize:10,fontWeight:500,color:'var(--green)',marginTop:2}}>● онлайн</div></div>
-                </div>}
-              </div>
-            </div>
-            <div className={'content-area'+(tab==='chats'?' no-pad':'')}>
-              {renderContent()}
-            </div>
-          </div>
-        </div>
-      </div>
-      {profileUser&&<UserModal user={profileUser} onClose={()=>setProfileUser(null)} onChat={()=>{startChatGlobal(profileUser);setProfileUser(null)}}/>}
-    </div>
-  );
+    else
+        setStep(s => s - 1); };
+    return (React.createElement("div", { className: 'ob' },
+        React.createElement("div", { className: 'ob-b' },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 } },
+                React.createElement("div", null,
+                    React.createElement("div", { className: 'logo', style: { fontSize: 15 } }, "\u0413\u0413\u0412\u041F"),
+                    React.createElement("div", { className: 'ob-sub', style: { marginBottom: 14 } }, "\u0421\u0415\u0420\u0412\u0418\u0421 \u041F\u041E\u0418\u0421\u041A\u0410 \u0422\u0418\u041C\u041C\u0415\u0419\u0422\u041E\u0412")),
+                React.createElement("button", { className: 'btn btn-g btn-sm', onClick: onBack, style: { flexShrink: 0 } }, "\u041A\u043E \u0432\u0445\u043E\u0434\u0443")),
+            React.createElement("div", { className: 'prog' }, [0, 1, 2].map(i => React.createElement("div", { key: i, className: 'ps' + (i <= step ? ' d' : '') }))),
+            step === 0 && React.createElement("div", { className: 'fu' },
+                React.createElement("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 5, fontFamily: 'var(--sans)' } }, "\u041A\u0430\u043A \u0442\u0435\u0431\u044F \u0437\u043E\u0432\u0443\u0442?"),
+                React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', marginBottom: 22, lineHeight: 1.5 } }, "\u0418\u0433\u0440\u043E\u0432\u043E\u0439 \u043D\u0438\u043A \u2014 \u0431\u0443\u0434\u0435\u0442 \u0432\u0438\u0434\u0435\u043D \u0432\u0441\u0435\u043C"),
+                React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, marginBottom: 22 } },
+                    React.createElement(AvatarUpload, { user: { id: 'ob', nickname: nick || '?', avatar }, size: 84, radius: 24, onUpload: s => setAvatar(s), hint: true }),
+                    React.createElement("div", { style: { width: '100%' } },
+                        React.createElement("input", { placeholder: 'xz_phantom', value: nick, autoFocus: true, onChange: e => { setNick(e.target.value); setErr(''); }, onKeyDown: e => e.key === 'Enter' && nick.trim() && next(), style: { fontSize: 16, textAlign: 'center', padding: '13px 14px' } }),
+                        err && React.createElement("p", { style: { color: 'var(--pk)', fontSize: 12, marginTop: 7, textAlign: 'center', fontFamily: 'var(--mono)' } }, err))),
+                React.createElement("div", { style: { display: 'flex', gap: 8 } },
+                    React.createElement("button", { className: 'btn btn-g', style: { flex: '0 0 auto' }, onClick: back }, "\u041D\u0430\u0437\u0430\u0434"),
+                    React.createElement("button", { className: 'btn btn-p', style: { flex: 1 }, onClick: next }, "\u0414\u0430\u043B\u0435\u0435"))),
+            step === 1 && React.createElement("div", { className: 'fu' },
+                React.createElement("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 5, fontFamily: 'var(--sans)' } }, "\u0412 \u043A\u0430\u043A\u0438\u0435 \u0438\u0433\u0440\u044B \u0438\u0433\u0440\u0430\u0435\u0448\u044C?"),
+                React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', marginBottom: 18, lineHeight: 1.5 } }, "\u0412\u044B\u0431\u0435\u0440\u0438 \u0438\u0433\u0440\u0443 \u0438 \u0440\u043E\u043B\u0438 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0438\u043B\u0438 \u0434\u043E\u0431\u0430\u0432\u044C \u0441\u0432\u043E\u0438"),
+                games.map((g, i) => React.createElement("div", { key: i, className: 'card2', style: { marginBottom: 10 } },
+                    React.createElement("div", { style: { display: 'flex', gap: 8, marginBottom: 10 } },
+                        React.createElement("select", { value: g.game, onChange: e => { const ng = [...games]; ng[i] = { ...ng[i], game: e.target.value, roles: [] }; setGames(ng); }, style: { flex: 1 } }, GAMES.map(gm => React.createElement("option", { key: gm }, gm))),
+                        games.length > 1 && React.createElement("button", { className: 'btn btn-g btn-sm', style: { padding: '8px 11px' }, onClick: () => setGames(games.filter((_, j) => j !== i)) },
+                            React.createElement(Icon, { n: 'trash' }))),
+                    React.createElement("label", { className: 'fl' }, "\u0420\u043E\u043B\u0438"),
+                    React.createElement(RolesPicker, { game: g.game, selected: g.roles, onChange: v => { const ng = [...games]; ng[i] = { ...ng[i], roles: v }; setGames(ng); } }))),
+                React.createElement("button", { className: 'btn btn-g btn-sm btn-fw', style: { marginBottom: 18 }, onClick: () => setGames([...games, { game: 'CS2', roles: [] }]) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438\u0433\u0440\u0443"),
+                React.createElement("div", { style: { display: 'flex', gap: 8 } },
+                    React.createElement("button", { className: 'btn btn-g', style: { flex: '0 0 auto' }, onClick: back }, "\u041D\u0430\u0437\u0430\u0434"),
+                    React.createElement("button", { className: 'btn btn-p', style: { flex: 1 }, onClick: next }, "\u0414\u0430\u043B\u0435\u0435"))),
+            step === 2 && React.createElement("div", { className: 'fu' },
+                React.createElement("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 5, fontFamily: 'var(--sans)' } }, "\u0422\u0432\u043E\u0439 \u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440"),
+                React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', marginBottom: 18, lineHeight: 1.5 } }, "\u0420\u0430\u0434\u0430\u0440 \u0432\u0438\u0434\u0435\u043D \u0432\u0441\u0435\u043C. \u041E\u0441\u0438 \u043C\u043E\u0436\u043D\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043F\u043E\u0434 \u0441\u0435\u0431\u044F"),
+                React.createElement("div", { style: { display: 'flex', gap: 16, marginBottom: 16, alignItems: 'center' } },
+                    React.createElement(RadarSvg, { axes: axes, values: vals, size: 104 }),
+                    React.createElement("div", { style: { flex: 1 } },
+                        React.createElement(RadarSliders, { axes: axes, values: vals, onChange: setVals }))),
+                React.createElement("div", { className: 'sep' }),
+                React.createElement(AxisEditor, { axes: axes, onChange: setAxes }),
+                React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 20 } },
+                    React.createElement("button", { className: 'btn btn-g', style: { flex: '0 0 auto' }, onClick: back }, "\u041D\u0430\u0437\u0430\u0434"),
+                    React.createElement("button", { className: 'btn btn-p', style: { flex: 1 }, onClick: done }, "\u0412\u043E\u0439\u0442\u0438 \u0432 \u0438\u0433\u0440\u0443"))))));
 }
-
+/* ── CHAT helpers: snapshot участников, чтобы имя/аватар были видны всегда ── */
+function makeChat(me, target) {
+    const cid = [me.id, target.id].sort().join('_');
+    return { id: cid, participants: [me.id, target.id],
+        peers: { [me.id]: { id: me.id, nickname: me.nickname, avatar: me.avatar || null },
+            [target.id]: { id: target.id, nickname: target.nickname, avatar: target.avatar || null } },
+        lastMsg: '', lastTs: now(), createdAt: now() };
+}
+function ensureChat(me, target, chats, setChats) {
+    const cid = [me.id, target.id].sort().join('_');
+    if (chats.find(c => c.id === cid))
+        return cid;
+    const nc = makeChat(me, target);
+    const upd = [...chats, nc];
+    setChats(upd);
+    ls.set('gv:ch:' + me.id, upd);
+    const tc = ls.get('gv:ch:' + target.id) || [];
+    if (!tc.find(c => c.id === cid))
+        ls.set('gv:ch:' + target.id, [...tc, nc]);
+    return cid;
+}
+/* ── BOARD ── */
+function BoardScreen({ me, users, listings, setListings, chats, setChats, goChat }) {
+    const [showForm, setShowForm] = useState(false);
+    const [editId, setEditId] = useState(null);
+    const [form, setForm] = useState({ game: GAMES[0] || 'Valorant', rolesNeeded: [], description: '' });
+    const [ferr, setFerr] = useState('');
+    const [viewUser, setViewUser] = useState(null);
+    const mine = listings.filter(l => l.userId === me.id);
+    const others = listings.filter(l => l.userId !== me.id && l.expiresAt > now());
+    const allUsers = Object.values(users || {});
+    const playerCount = allUsers.length;
+    const onlineCount = allUsers.filter(u => u._online).length;
+    // совместимость: старые объявления могли хранить roleNeeded (строка)
+    const rolesOf = l => Array.isArray(l.rolesNeeded) ? l.rolesNeeded : (l.roleNeeded ? [l.roleNeeded] : []);
+    const openCreate = () => { setForm({ game: GAMES[0] || 'Valorant', rolesNeeded: [], description: '' }); setEditId(null); setFerr(''); setShowForm(true); };
+    const openEdit = l => { setForm({ game: l.game, rolesNeeded: rolesOf(l), description: l.description || '' }); setEditId(l.id); setFerr(''); setShowForm(true); };
+    const save = () => {
+        if (!form.rolesNeeded || form.rolesNeeded.length === 0) {
+            setFerr('Выбери хотя бы одну роль');
+            return;
+        }
+        if (!form.description.trim()) {
+            setFerr('Добавь описание');
+            return;
+        }
+        const data = { game: form.game, rolesNeeded: form.rolesNeeded, description: form.description.trim() };
+        const fresh = ls.get('gv:li') || []; // берём свежий список (а не устаревший из стейта)
+        let upd = editId
+            ? fresh.map(l => l.id === editId ? { ...l, ...data } : l)
+            : [{ id: uid(), userId: me.id, authorName: me.nickname, authorAvatar: me.avatar || null, ...data, createdAt: now(), expiresAt: now() + 30 * 60 * 1000, status: 'active' }, ...fresh];
+        ls.set('gv:li', upd);
+        setListings(upd.filter(l => l.status === 'active' && l.expiresAt > now()));
+        setShowForm(false);
+    };
+    const del = id => { const fresh = ls.get('gv:li') || []; const upd = fresh.filter(l => l.id !== id); ls.set('gv:li', upd); setListings(upd.filter(l => l.status === 'active' && l.expiresAt > now())); };
+    const apply = l => {
+        const ex = ls.get('gv:no:' + l.userId) || [];
+        if (ex.some(n => n.type === 'application' && n.fromUserId === me.id && n.listingGame === l.game)) {
+            alert('Ты уже отправил заявку на это объявление!');
+            return;
+        }
+        const notif = { id: uid(), userId: l.userId, type: 'application', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, listingGame: l.game, read: false, ts: now() };
+        ls.set('gv:no:' + l.userId, [notif, ...ex]);
+        alert('Заявка отправлена! Ответ придёт в «события».');
+    };
+    const startChat = target => { ensureChat(me, target, chats, setChats); goChat && goChat(target.id); };
+    const LCard = ({ l, isMine }) => {
+        const author = users[l.userId] || { id: l.userId, nickname: l.authorName || 'игрок', avatar: l.authorAvatar || null };
+        const mins = Math.max(0, Math.floor((l.expiresAt - now()) / 60000));
+        return (React.createElement("div", { className: 'card', style: { marginBottom: 11 } },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 } },
+                React.createElement("div", { style: { cursor: isMine ? 'default' : 'pointer' }, onClick: () => !isMine && setViewUser(author) },
+                    React.createElement(Avatar, { user: author, size: 42, radius: 12 })),
+                React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 7 } },
+                        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 600, cursor: isMine ? 'default' : 'pointer', color: 'var(--white)' }, onClick: () => !isMine && setViewUser(author) }, author.nickname)),
+                    React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted2)', marginTop: 2 } }, fmtTime(l.createdAt))),
+                React.createElement("div", { className: 'timer-b' },
+                    React.createElement(Icon, { n: 'clock', style: { fontSize: 10, marginRight: 3, verticalAlign: '-1px' } }),
+                    mins,
+                    "\u043C")),
+            React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 11 } },
+                React.createElement("span", { className: 'tag tg' }, l.game),
+                rolesOf(l).map(r => React.createElement("span", { key: r, className: 'tag tr' }, r))),
+            React.createElement("div", { style: { fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 14 } },
+                React.createElement(Linkify, { text: l.description })),
+            isMine ? (React.createElement("div", { style: { display: 'flex', gap: 8 } },
+                React.createElement("button", { className: 'btn btn-g btn-sm', style: { flex: 1 }, onClick: () => openEdit(l) }, "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C"),
+                React.createElement("button", { className: 'btn btn-d btn-sm', style: { padding: '8px 12px' }, onClick: () => del(l.id) },
+                    React.createElement(Icon, { n: 'trash' })))) : (React.createElement("div", { style: { display: 'flex', gap: 8 } },
+                React.createElement("button", { className: 'btn btn-g btn-sm', style: { flex: 1 }, onClick: () => setViewUser(author) }, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C"),
+                React.createElement("button", { className: 'btn btn-p btn-sm', style: { flex: 2 }, onClick: () => apply(l) }, "\u041F\u043E\u0434\u0430\u0442\u044C \u0437\u0430\u044F\u0432\u043A\u0443")))));
+    };
+    return (React.createElement("div", { className: 'content-wrap' },
+        React.createElement("div", { className: 'ph' },
+            React.createElement("div", { className: 'ph-t' }, "\u0414\u043E\u0441\u043A\u0430 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0439"),
+            React.createElement("button", { className: 'btn btn-p btn-sm', onClick: openCreate }, "\u0421\u043E\u0437\u0434\u0430\u0442\u044C")),
+        React.createElement("div", { className: 'hero' },
+            React.createElement("div", { className: 'hero-glow' }),
+            React.createElement("div", { className: 'hero-grid' }),
+            React.createElement("div", { style: { position: 'relative', zIndex: 1 } },
+                React.createElement("div", { className: 'hero-kicker' },
+                    React.createElement("span", { className: 'hero-live' }),
+                    "LFG \u00B7 LOOKING FOR GROUP"),
+                React.createElement("div", { className: 'hero-title' },
+                    "\u0421\u043E\u0431\u0435\u0440\u0438 \u0441\u0432\u043E\u0439 ",
+                    React.createElement("span", { className: 'hero-accent' }, "\u043E\u0442\u0440\u044F\u0434")),
+                React.createElement("div", { className: 'hero-sub' }, "\u041D\u0430\u0439\u0434\u0438 \u0442\u0438\u043C\u043C\u0435\u0439\u0442\u043E\u0432 \u043F\u043E \u0438\u0433\u0440\u0435, \u0440\u043E\u043B\u0438 \u0438 \u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440\u0443 \u2014 \u0431\u0435\u0437 \u0440\u0430\u043D\u0434\u043E\u043C\u0430 \u0438 \u0442\u043E\u043A\u0441\u0438\u043A\u043E\u0432."),
+                React.createElement("div", { className: 'hero-stats' },
+                    React.createElement("div", { className: 'hero-stat' },
+                        React.createElement("div", { className: 'hero-stat-v' }, playerCount),
+                        React.createElement("div", { className: 'hero-stat-l' }, "\u0438\u0433\u0440\u043E\u043A\u043E\u0432")),
+                    React.createElement("div", { className: 'hero-stat' },
+                        React.createElement("div", { className: 'hero-stat-v' }, onlineCount),
+                        React.createElement("div", { className: 'hero-stat-l' }, "\u043E\u043D\u043B\u0430\u0439\u043D")),
+                    React.createElement("div", { className: 'hero-stat' },
+                        React.createElement("div", { className: 'hero-stat-v' }, others.length + mine.length),
+                        React.createElement("div", { className: 'hero-stat-l' }, "\u0430\u043D\u043A\u0435\u0442"))))),
+        mine.length > 0 && React.createElement("div", { style: { marginBottom: 26 } },
+            React.createElement("div", { className: 'sl' }, "\u043C\u043E\u0438 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u044F"),
+            mine.map(l => React.createElement(LCard, { key: l.id, l: l, isMine: true }))),
+        React.createElement("div", { className: 'sl' },
+            "\u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0435 \u00B7 ",
+            others.length),
+        others.length === 0
+            ? React.createElement("div", { className: 'emp' },
+                React.createElement("div", { className: 'emp-ic' },
+                    React.createElement(Icon, { n: 'clipboard-list' })),
+                React.createElement("p", null,
+                    "\u043F\u043E\u043A\u0430 \u043D\u0435\u0442 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0439",
+                    React.createElement("br", null),
+                    "\u0441\u043E\u0437\u0434\u0430\u0439 \u043F\u0435\u0440\u0432\u043E\u0435 \u0438 \u0441\u043E\u0431\u0435\u0440\u0438 \u043E\u0442\u0440\u044F\u0434!"))
+            : others.map(l => React.createElement(LCard, { key: l.id, l: l, isMine: false })),
+        showForm && React.createElement(Modal, { title: editId ? 'Изменить объявление' : 'Новое объявление', onClose: () => setShowForm(false) },
+            React.createElement("div", { className: 'fg' },
+                React.createElement("label", { className: 'fl' }, "\u0418\u0433\u0440\u0430"),
+                React.createElement("select", { value: form.game, onChange: e => setForm({ ...form, game: e.target.value, rolesNeeded: [] }) }, GAMES.map(g => React.createElement("option", { key: g }, g)))),
+            React.createElement("div", { className: 'fg' },
+                React.createElement("label", { className: 'fl' }, "\u041D\u0443\u0436\u043D\u044B\u0435 \u0440\u043E\u043B\u0438 / \u043F\u043E\u0437\u0438\u0446\u0438\u0438"),
+                React.createElement(RolesPicker, { game: form.game, selected: form.rolesNeeded, onChange: v => setForm(f => ({ ...f, rolesNeeded: v })) })),
+            React.createElement("div", { className: 'fg' },
+                React.createElement("label", { className: 'fl' },
+                    "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 ",
+                    React.createElement("span", { style: { color: 'var(--muted2)' } },
+                        "(",
+                        form.description.length,
+                        "/140)")),
+                React.createElement("textarea", { placeholder: '\u041A\u043E\u0433\u043E \u0438\u0449\u0435\u0448\u044C \u0438 \u0437\u0430\u0447\u0435\u043C...', value: form.description, maxLength: 140, onChange: e => setForm({ ...form, description: e.target.value }) })),
+            ferr && React.createElement("p", { style: { color: 'var(--pk)', fontSize: 12, marginBottom: 12, fontFamily: 'var(--mono)' } }, ferr),
+            React.createElement("div", { style: { display: 'flex', gap: 8 } },
+                React.createElement("button", { className: 'btn btn-g', style: { flex: 1 }, onClick: () => setShowForm(false) }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                React.createElement("button", { className: 'btn btn-p', style: { flex: 2 }, onClick: save }, editId ? 'Сохранить' : 'Опубликовать'))),
+        viewUser && React.createElement(UserModal, { user: viewUser, onClose: () => setViewUser(null), onChat: () => startChat(viewUser) })));
+}
+/* ── CHATS ── */
+function ChatsScreen({ me, users, chats, setChats, openChatId, clearOpenChat, mobile, startChat }) {
+    const [activeId, setActiveId] = useState(null);
+    const [msgs, setMsgs] = useState({});
+    const [input, setInput] = useState('');
+    const [chatOpen, setChatOpen] = useState(false);
+    const [viewUser, setViewUser] = useState(null);
+    const endRef = useRef(null);
+    const msgsRef = useRef(null);
+    const pollRef = useRef(null);
+    const inpRef = useRef(null);
+    const loadMsgs = useCallback(cid => { const m = ls.get('gv:ms:' + cid) || []; setMsgs(prev => ({ ...prev, [cid]: m })); }, []);
+    // открыть конкретный чат по запросу извне (из доски/событий)
+    useEffect(() => {
+        if (openChatId) {
+            const cid = [me.id, openChatId].sort().join('_');
+            setActiveId(cid);
+            setChatOpen(true);
+            loadMsgs(cid);
+            clearOpenChat && clearOpenChat();
+        }
+    }, [openChatId]);
+    useEffect(() => {
+        if (!activeId)
+            return;
+        loadMsgs(activeId);
+        clearInterval(pollRef.current);
+        pollRef.current = setInterval(() => loadMsgs(activeId), 1500);
+        return () => clearInterval(pollRef.current);
+    }, [activeId, loadMsgs]);
+    // прокрутка только внутри области сообщений (не дёргает всю страницу)
+    const prevActive = useRef(null);
+    useEffect(() => {
+        const el = msgsRef.current;
+        if (!el)
+            return;
+        const instant = prevActive.current !== activeId; // при открытии/смене чата — мгновенно, без анимации
+        prevActive.current = activeId;
+        el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' });
+    }, [msgs, activeId]);
+    const send = () => {
+        var _a, _b;
+        if (!input.trim() || !activeId)
+            return;
+        const m = { id: uid(), from: me.id, text: input.trim(), ts: now() };
+        const cur = [...(msgs[activeId] || []), m];
+        setMsgs(prev => ({ ...prev, [activeId]: cur }));
+        ls.set('gv:ms:' + activeId, cur);
+        const upd = chats.map(c => c.id === activeId ? { ...c, lastMsg: m.text, lastTs: m.ts } : c);
+        setChats(upd);
+        ls.set('gv:ch:' + me.id, upd);
+        // зеркалим последнее сообщение и собеседнику
+        const ch = chats.find(c => c.id === activeId);
+        const oid = (_a = ch === null || ch === void 0 ? void 0 : ch.participants) === null || _a === void 0 ? void 0 : _a.find(p => p !== me.id);
+        if (oid) {
+            const tc = (ls.get('gv:ch:' + oid) || []).map(c => c.id === activeId ? { ...c, lastMsg: m.text, lastTs: m.ts } : c);
+            ls.set('gv:ch:' + oid, tc);
+        }
+        setInput('');
+        (_b = inpRef.current) === null || _b === void 0 ? void 0 : _b.focus();
+    };
+    // имя/аватар собеседника: live-юзер -> снапшот в чате -> заглушка
+    const getOther = chat => {
+        var _a, _b;
+        const oid = (_a = chat.participants) === null || _a === void 0 ? void 0 : _a.find(p => p !== me.id);
+        return users[oid] || ((_b = chat.peers) === null || _b === void 0 ? void 0 : _b[oid]) || { id: oid || '?', nickname: 'игрок' };
+    };
+    const sorted = [...chats].sort((a, b) => (b.lastTs || 0) - (a.lastTs || 0));
+    const curMsgs = activeId ? (msgs[activeId] || []) : [];
+    const aChat = chats.find(c => c.id === activeId);
+    const aOther = aChat ? getOther(aChat) : null;
+    return (React.createElement("div", { className: 'chat-wrap' + (mobile ? ' mob' : '') + (chatOpen ? ' chat-open' : ''), style: { height: '100%' } },
+        React.createElement("div", { className: 'chat-list' },
+            React.createElement("div", { style: { padding: '14px 16px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted2)', letterSpacing: '.16em', textTransform: 'uppercase', borderBottom: '1px solid var(--bd)' } },
+                "\u0447\u0430\u0442\u044B \u00B7 ",
+                chats.length),
+            sorted.length === 0
+                ? React.createElement("div", { className: 'emp', style: { paddingTop: 48 } },
+                    React.createElement("div", { className: 'emp-ic' },
+                        React.createElement(Icon, { n: 'message-2' })),
+                    React.createElement("p", null,
+                        "\u043F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0447\u0430\u0442\u043E\u0432",
+                        React.createElement("br", null),
+                        "\u043D\u0430\u0439\u0434\u0438 \u0442\u0438\u043C\u043C\u0435\u0439\u0442\u0430 \u0432 \u043F\u043E\u0438\u0441\u043A\u0435"))
+                : sorted.map(c => {
+                    const ot = getOther(c);
+                    return (React.createElement("div", { key: c.id, className: 'ci' + (c.id === activeId ? ' on' : ''), onClick: () => { setActiveId(c.id); setChatOpen(true); loadMsgs(c.id); } },
+                        React.createElement(Avatar, { user: ot, size: 44, radius: 13 }),
+                        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                                React.createElement("span", { style: { fontSize: 14, fontWeight: 600 } }, ot.nickname)),
+                            React.createElement("div", { style: { fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 } }, c.lastMsg || 'нет сообщений')),
+                        React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted2)', flexShrink: 0 } }, c.lastTs ? fmtAgo(c.lastTs) : '')));
+                })),
+        React.createElement("div", { className: 'chat-conv' }, !aOther ? React.createElement("div", { className: 'emp', style: { margin: 'auto' } },
+            React.createElement("div", { className: 'emp-ic' },
+                React.createElement(Icon, { n: 'message-circle' })),
+            React.createElement("p", null, "\u0432\u044B\u0431\u0435\u0440\u0438 \u0447\u0430\u0442, \u0447\u0442\u043E\u0431\u044B \u043D\u0430\u0447\u0430\u0442\u044C \u043E\u0431\u0449\u0435\u043D\u0438\u0435")) : React.createElement(React.Fragment, null,
+            React.createElement("div", { className: 'chat-hdr' },
+                mobile && React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => setChatOpen(false) }, "\u041D\u0430\u0437\u0430\u0434"),
+                React.createElement("div", { className: 'chat-hdr-info', style: { display: 'flex', alignItems: 'center', gap: 11 }, onClick: () => setViewUser(aOther) },
+                    React.createElement(Avatar, { user: aOther, size: 38, radius: 11 }),
+                    React.createElement("div", { style: { minWidth: 0 } },
+                        React.createElement("div", { className: 'chat-hdr-name' }, aOther.nickname),
+                        React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 500, color: 'var(--muted2)', marginTop: 2 } }, "\u043D\u0430\u0436\u043C\u0438, \u0447\u0442\u043E\u0431\u044B \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043F\u0440\u043E\u0444\u0438\u043B\u044C"))),
+                React.createElement("button", { className: 'btn btn-g btn-sm', style: { marginLeft: 'auto' }, onClick: () => setViewUser(aOther) }, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C")),
+            React.createElement("div", { className: 'msgs-area', ref: msgsRef },
+                curMsgs.length === 0 && React.createElement("div", { style: { textAlign: 'center', color: 'var(--muted2)', fontSize: 12, marginTop: 24 } }, "\u041D\u0430\u0447\u0430\u043B\u043E \u0447\u0430\u0442\u0430 \u2014 \u0441\u043A\u0430\u0436\u0438 \u043F\u0440\u0438\u0432\u0435\u0442 \uD83D\uDC4B"),
+                curMsgs.map((m, i) => {
+                    const mine = m.from === me.id;
+                    const prev = curMsgs[i - 1];
+                    const grp = prev && prev.from === m.from && (m.ts - prev.ts < 120000);
+                    return (React.createElement("div", { key: m.id, className: 'mr' + (mine ? ' me' : '') + (grp ? ' grp' : '') },
+                        !mine && React.createElement("div", { style: { width: 28, flexShrink: 0 } }, !grp && React.createElement(Avatar, { user: aOther, size: 28, radius: 9 })),
+                        React.createElement("div", { className: 'mr-col' },
+                            React.createElement("div", { className: 'bub' + (mine ? ' mine' : ' them') },
+                                React.createElement(Linkify, { text: m.text })),
+                            React.createElement("div", { className: 'mtime', style: { textAlign: mine ? 'right' : 'left' } }, fmtTime(m.ts)))));
+                }),
+                React.createElement("div", { ref: endRef })),
+            React.createElement("div", { className: 'chat-inp-row' },
+                React.createElement("textarea", { ref: inpRef, className: 'chat-inp', placeholder: '\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435... (Enter \u2014 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C)', rows: 1, value: input, onChange: e => setInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        send();
+                    } } }),
+                React.createElement("button", { className: 'btn btn-p', style: { height: 44, flexShrink: 0, paddingLeft: 16, paddingRight: 16 }, onClick: send },
+                    React.createElement(Icon, { n: 'send', style: { fontSize: 18 } }))))),
+        viewUser && React.createElement(UserModal, { user: viewUser, onClose: () => setViewUser(null), onChat: viewUser.id !== me.id && startChat ? () => startChat(viewUser) : null, selfView: viewUser.id === me.id })));
+}
+/* ── ПОИСК ТИММЕЙТОВ (GACHA) ── */
+function FindScreen({ me, users, chats, setChats, goChat }) {
+    var _a, _b;
+    const [phase, setPhase] = useState('chest');
+    const [showTutorial, setShowTutorial] = useState(!ls.get('gv:tut:seen'));
+    const [pool, setPool] = useState([]);
+    const [idx, setIdx] = useState(0);
+    const [left, setLeft] = useState(10);
+    const [matched, setMatched] = useState(null);
+    const [shaking, setShaking] = useState(false);
+    // попытки привязаны к АККАУНТУ (через общий слой данных), а не к устройству
+    const opKey = () => 'gv:op:' + me.id + ':' + new Date().toDateString();
+    useEffect(() => { const used = +(ls.get(opKey()) || 0); setLeft(Math.max(0, 10 - used)); }, [me.id]);
+    const closeTutorial = () => { ls.set('gv:tut:seen', true); setShowTutorial(false); };
+    const decrLeft = () => { const used = +(ls.get(opKey()) || 0) + 1; ls.set(opKey(), used); setLeft(Math.max(0, 10 - used)); };
+    // очки совпадения: общие игры (главное) + близость радара + немного рандома
+    const myGames = (me.games || []).map(g => g.game);
+    const myRadar = me.radarValues || DA.map(a => { var _a; return ((_a = me.radar) === null || _a === void 0 ? void 0 : _a[a.key]) || 5; });
+    const sharedGames = u => { const ug = (u.games || []).map(g => g.game); return myGames.filter(g => ug.includes(g)); };
+    const scoreOf = u => {
+        let s = 0;
+        s += sharedGames(u).length * 10; // общие игры — сильнейший сигнал
+        const ur = u.radarValues || DA.map(a => { var _a; return ((_a = u.radar) === null || _a === void 0 ? void 0 : _a[a.key]) || 5; });
+        let diff = 0;
+        for (let i = 0; i < Math.min(myRadar.length, ur.length); i++)
+            diff += Math.abs((myRadar[i] || 5) - (ur[i] || 5));
+        s += Math.max(0, 6 - diff / 4); // чем ближе характер — тем больше очков
+        s += Math.random() * 3; // лёгкая перетасовка, чтобы не приедалось
+        return s;
+    };
+    const openChest = () => {
+        if (left <= 0)
+            return;
+        const real = Object.values(users).filter(u => u.id !== me.id);
+        if (real.length === 0) {
+            alert('Пока нет других игроков!\nОткрой приложение в другой вкладке и зарегистрируй второй аккаунт для теста, или зови друзей!');
+            return;
+        }
+        const src = [...real].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 10); // подбор по интересам
+        setPool(src);
+        setIdx(0);
+        decrLeft();
+        setMatched(null);
+        setShaking(true);
+        setTimeout(() => { setShaking(false); setPhase('cards'); }, 560);
+    };
+    const next = () => { if (idx + 1 >= pool.length)
+        setPhase('done');
+    else
+        setIdx(i => i + 1); };
+    const like = () => {
+        const t = pool[idx];
+        const mlk = ls.get('gv:lk:' + me.id) || [];
+        if (!mlk.includes(t.id))
+            ls.set('gv:lk:' + me.id, [...mlk, t.id]);
+        const tlk = ls.get('gv:lk:' + t.id) || [];
+        if (tlk.includes(me.id)) {
+            // взаимный лайк → мэтч: открываем чат и уведомляем обоих
+            ensureChat(me, t, chats, setChats);
+            const tn = ls.get('gv:no:' + t.id) || [];
+            ls.set('gv:no:' + t.id, [{ id: uid(), userId: t.id, type: 'match', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }, ...tn]);
+            setMatched(t);
+        }
+        else {
+            // обычный лайк → уведомление другому игроку
+            const tn = ls.get('gv:no:' + t.id) || [];
+            ls.set('gv:no:' + t.id, [{ id: uid(), userId: t.id, type: 'like', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }, ...tn]);
+        }
+        next();
+    };
+    const cur = pool[idx];
+    const curShared = cur ? sharedGames(cur) : [];
+    const ca = (cur === null || cur === void 0 ? void 0 : cur.radarAxes) || DA;
+    const cv = (cur === null || cur === void 0 ? void 0 : cur.radarValues) || ca.map(a => { var _a; return ((_a = cur === null || cur === void 0 ? void 0 : cur.radar) === null || _a === void 0 ? void 0 : _a[a.key]) || 5; });
+    return (React.createElement("div", { className: 'content-wrap' },
+        showTutorial && React.createElement(Tutorial, { onClose: closeTutorial }),
+        React.createElement("div", { className: 'ph' },
+            React.createElement("div", { className: 'ph-t' }, "\u041F\u043E\u0438\u0441\u043A \u0442\u0438\u043C\u043C\u0435\u0439\u0442\u043E\u0432"),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 9 } },
+                React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => setShowTutorial(true) }, "\u041F\u043E\u043C\u043E\u0449\u044C"),
+                React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted2)' } },
+                    "\u0434\u0440\u043E\u043F\u043E\u0432: ",
+                    React.createElement("span", { style: { color: 'var(--pk)', fontWeight: 700 } }, left),
+                    "/10"))),
+        matched && React.createElement("div", { className: 'match-b fu' },
+            React.createElement(Avatar, { user: matched, size: 44, radius: 13 }),
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement("div", { style: { fontSize: 15, fontWeight: 700, fontFamily: 'var(--sans)' } },
+                    "\u041C\u044D\u0442\u0447 \u0441 ",
+                    matched.nickname,
+                    "! \uD83C\uDF89"),
+                React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', marginTop: 2 } }, "\u0427\u0430\u0442 \u0443\u0436\u0435 \u043E\u0442\u043A\u0440\u044B\u0442 \u2014 \u043D\u0430\u043F\u0438\u0448\u0438 \u043F\u0435\u0440\u0432\u044B\u043C")),
+            React.createElement("button", { className: 'btn btn-p btn-sm', onClick: () => goChat && goChat(matched.id) }, "\u041E\u0442\u043A\u0440\u044B\u0442\u044C")),
+        React.createElement("div", { className: 'gacha-c' },
+            phase === 'chest' && React.createElement(React.Fragment, null,
+                React.createElement("button", { className: 'lootbox-stage' + (left > 0 ? ' open-ready' : ' depleted'), onClick: openChest, disabled: left <= 0, "aria-label": '\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0434\u0440\u043E\u043F' },
+                    React.createElement("div", { className: 'lootbox-glow' }),
+                    React.createElement("div", { className: 'lootbox-grid' }),
+                    React.createElement("div", { className: 'lootbox-ring' }),
+                    React.createElement("svg", { className: 'chest-svg', width: '230', height: '230', viewBox: '0 0 152 152', style: { animation: shaking ? 'shake .55s' : 'chestFloat 4s ease-in-out infinite' } },
+                        React.createElement("defs", null,
+                            React.createElement("linearGradient", { id: 'cg', x1: '0', y1: '0', x2: '1', y2: '1' },
+                                React.createElement("stop", { offset: '0', stopColor: '#FF3D7F' }),
+                                React.createElement("stop", { offset: '.5', stopColor: '#FF5C9A' }),
+                                React.createElement("stop", { offset: '1', stopColor: '#7C6CFF' })),
+                            React.createElement("linearGradient", { id: 'cgGold', x1: '0', y1: '0', x2: '1', y2: '1' },
+                                React.createElement("stop", { offset: '0', stopColor: '#FFD66B' }),
+                                React.createElement("stop", { offset: '1', stopColor: '#FFB454' }))),
+                        React.createElement("ellipse", { cx: '76', cy: '138', rx: '46', ry: '7', fill: 'rgba(124,108,255,.25)' }),
+                        React.createElement("rect", { x: '16', y: '77', width: '120', height: '59', rx: '13', fill: '#1a1a24', stroke: 'url(#cg)', strokeWidth: '2' }),
+                        React.createElement("rect", { x: '16', y: '30', width: '120', height: '49', rx: '13', fill: '#23232f', stroke: 'url(#cg)', strokeWidth: '2' }),
+                        React.createElement("rect", { x: '55', y: '66', width: '42', height: '22', rx: '7', fill: '#0f0f16', stroke: 'url(#cgGold)', strokeWidth: '2' }),
+                        React.createElement("circle", { cx: '76', cy: '77', r: '8', fill: '#2a1a26', stroke: 'url(#cgGold)', strokeWidth: '2' }),
+                        React.createElement("circle", { cx: '76', cy: '77', r: '3.5', fill: '#FFD66B' }),
+                        React.createElement("rect", { x: '28', y: '49', width: '96', height: '4', rx: '2', fill: '#15151c' }),
+                        React.createElement("rect", { x: '28', y: '49', width: `${(10 - left) / 10 * 96}`, height: '4', rx: '2', fill: 'url(#cg)' }),
+                        [[55, 90], [71, 90], [87, 90], [55, 106], [71, 106], [87, 106]].map(([x, y], i) => React.createElement("rect", { key: i, x: x, y: y, width: '10', height: '10', rx: '2', fill: '#16161e', stroke: '#34343f', strokeWidth: '1' })),
+                        React.createElement("line", { x1: '16', y1: '79', x2: '136', y2: '79', stroke: 'url(#cg)', strokeWidth: '1.5', opacity: '.5' })),
+                    left > 0 && React.createElement("div", { className: 'lootbox-tap' },
+                        React.createElement(Icon, { n: 'box', style: { fontSize: 15 } }),
+                        " \u043D\u0430\u0436\u043C\u0438, \u0447\u0442\u043E\u0431\u044B \u043E\u0442\u043A\u0440\u044B\u0442\u044C")),
+                React.createElement("div", { style: { textAlign: 'center' } },
+                    React.createElement("div", { style: { fontFamily: 'var(--sans)', fontWeight: 700, fontSize: 20, color: '#fff', letterSpacing: '-.01em', marginBottom: 6 } }, "\u0414\u0440\u043E\u043F \u0442\u0438\u043C\u043C\u0435\u0439\u0442\u043E\u0432"),
+                    React.createElement("div", { style: { fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.55, maxWidth: 300, margin: '0 auto' } }, "\u041F\u043E\u0434\u0431\u0438\u0440\u0430\u0435\u043C \u0438\u0433\u0440\u043E\u043A\u043E\u0432 \u043F\u043E\u0434 \u0442\u0432\u043E\u0438 \u0438\u043D\u0442\u0435\u0440\u0435\u0441\u044B. \u041B\u0438\u0441\u0442\u0430\u0439, \u043B\u0430\u0439\u043A\u0430\u0439 \u0438 \u043B\u043E\u0432\u0438 \u043C\u044D\u0442\u0447.")),
+                React.createElement("div", { className: 'drop-tries' }, Array.from({ length: 10 }).map((_, i) => React.createElement("span", { key: i, className: 'drop-pip' + (i < left ? ' on' : '') }))),
+                React.createElement("div", { className: 'lootbox-meta' },
+                    React.createElement(Icon, { n: 'bolt', style: { color: 'var(--amber)' } }),
+                    " ",
+                    left > 0 ? ('осталось попыток: ' + left + ' / 10') : 'на сегодня лимит исчерпан — загляни завтра')),
+            phase === 'cards' && cur && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: 'gp-dots' }, pool.map((_, i) => React.createElement("div", { key: i, className: 'gp-dot', style: { background: i <= idx ? 'var(--pk)' : '#22222c', opacity: i <= idx ? 1 : .4 } }))),
+                React.createElement("div", { className: 'card pop', style: { width: '100%', maxWidth: 400 } },
+                    React.createElement("div", { style: { display: 'flex', gap: 15, marginBottom: 16 } },
+                        React.createElement(Avatar, { user: cur, size: 60, radius: 17 }),
+                        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' } },
+                                React.createElement("div", { style: { fontSize: 17, fontWeight: 600, fontFamily: 'var(--sans)' } }, cur.nickname),
+                                curShared.length > 0 && React.createElement("span", { className: 'match-pill' },
+                                    React.createElement(Icon, { n: 'bolt', style: { fontSize: 11 } }),
+                                    curShared.length,
+                                    " ",
+                                    curShared.length === 1 ? 'общая игра' : 'общих игр')),
+                            React.createElement("div", { style: { display: 'flex', gap: 5, flexWrap: 'wrap' } }, (cur.games || []).map(g => React.createElement("span", { key: g.game, className: 'tag ' + (curShared.includes(g.game) ? 'tg-match' : 'tg') },
+                                curShared.includes(g.game) && '★ ',
+                                g.game))),
+                            React.createElement("div", { style: { display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 } }, (_b = (_a = (cur.games || [])[0]) === null || _a === void 0 ? void 0 : _a.roles) === null || _b === void 0 ? void 0 : _b.slice(0, 3).map(r => React.createElement("span", { key: r, className: 'tag tr' }, r))))),
+                    React.createElement("div", { style: { display: 'flex', gap: 15, alignItems: 'center' } },
+                        React.createElement(RadarSvg, { axes: ca, values: cv, size: 92 }),
+                        React.createElement("div", { style: { flex: 1 } }, ca.map((ax, i) => React.createElement("div", { key: ax.key, className: 'rb' },
+                            React.createElement("div", { className: 'rbn', style: { color: ax.color } }, ax.label),
+                            React.createElement("div", { className: 'rbt' },
+                                React.createElement("div", { className: 'rbf', style: { width: (cv[i] || 5) * 10 + '%', background: ax.color } })),
+                            React.createElement("div", { className: 'rbv', style: { color: ax.color } }, cv[i] || 5)))))),
+                React.createElement("div", { className: 'g-actions' },
+                    React.createElement("button", { className: 'g-skip', onClick: next }, "\u041F\u0440\u043E\u043F\u0443\u0441\u0442\u0438\u0442\u044C"),
+                    React.createElement("button", { className: 'g-like', onClick: like }, "\u0412 \u043E\u0442\u0440\u044F\u0434")),
+                React.createElement("div", { className: 'lootbox-meta' },
+                    React.createElement(Icon, { n: 'bolt', style: { color: 'var(--amber)' } }),
+                    " \u0430\u043D\u043A\u0435\u0442\u0430 ",
+                    idx + 1,
+                    " \u0438\u0437 ",
+                    pool.length,
+                    " \u00B7 \u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u0434\u0440\u043E\u043F\u043E\u0432: ",
+                    left,
+                    "/10")),
+            phase === 'done' && React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { fontSize: 46 } }, "\uD83C\uDFAE"),
+                React.createElement("div", { style: { fontSize: 17, fontWeight: 700, fontFamily: 'var(--sans)' } }, "\u041A\u043E\u043B\u043E\u0434\u0430 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0435\u043D\u0430!"),
+                React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)' } },
+                    "\u041E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u0434\u0440\u043E\u043F\u043E\u0432 \u0441\u0435\u0433\u043E\u0434\u043D\u044F: ",
+                    left,
+                    "/10"),
+                left > 0 && React.createElement("button", { className: 'btn btn-p', onClick: () => { setPhase('chest'); setMatched(null); } }, "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0435\u0449\u0451")))));
+}
+/* ── NOTIFICATIONS ── */
+function NotifsScreen({ me, users, notifs, setNotifs, chats, setChats, goChat }) {
+    const [viewUser, setViewUser] = useState(null);
+    const peerFrom = n => users[n.fromUserId] || { id: n.fromUserId, nickname: n.fromName || 'игрок', avatar: n.fromAvatar || null };
+    const startChat = t => { ensureChat(me, t, chats, setChats); goChat && goChat(t.id); };
+    // помечаем все как прочитанные при открытии экрана — значок «новых» сразу пропадает
+    useEffect(() => {
+        const cur = ls.get('gv:no:' + me.id) || [];
+        if (cur.some(n => !n.read)) {
+            const upd = cur.map(n => ({ ...n, read: true }));
+            ls.set('gv:no:' + me.id, upd);
+            setNotifs(upd);
+        }
+    }, []);
+    const writeNotifs = upd => { ls.set('gv:no:' + me.id, upd); setNotifs(upd); };
+    const accept = n => { const t = peerFrom(n); ensureChat(me, t, chats, setChats); writeNotifs((ls.get('gv:no:' + me.id) || []).map(x => x.id === n.id ? { ...x, accepted: true, read: true } : x)); goChat && goChat(n.fromUserId); };
+    const likeback = n => { const t = peerFrom(n); ensureChat(me, t, chats, setChats); const mn = { id: uid(), userId: n.fromUserId, type: 'match', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }; const tn = ls.get('gv:no:' + n.fromUserId) || []; ls.set('gv:no:' + n.fromUserId, [mn, ...tn]); writeNotifs((ls.get('gv:no:' + me.id) || []).map(x => x.id === n.id ? { ...x, likedback: true, read: true } : x)); };
+    const dismiss = id => { writeNotifs((ls.get('gv:no:' + me.id) || []).map(x => x.id === id ? { ...x, dismissed: true, read: true } : x)); };
+    const visible = notifs.filter(n => !n.dismissed);
+    const unread = notifs.filter(n => !n.read && !n.dismissed).length;
+    return (React.createElement("div", { className: 'content-wrap' },
+        React.createElement("div", { className: 'ph' },
+            React.createElement("div", { className: 'ph-t' }, "\u0423\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u044F"),
+            visible.length > 0 && React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => writeNotifs((ls.get('gv:no:' + me.id) || []).map(n => ({ ...n, dismissed: true, read: true }))) }, "\u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C \u0432\u0441\u0451")),
+        visible.length === 0 ? React.createElement("div", { className: 'emp' },
+            React.createElement("div", { className: 'emp-ic' },
+                React.createElement(Icon, { n: 'bell' })),
+            React.createElement("p", null,
+                "\u043F\u043E\u043A\u0430 \u0442\u0438\u0445\u043E",
+                React.createElement("br", null),
+                "\u0437\u0434\u0435\u0441\u044C \u043F\u043E\u044F\u0432\u044F\u0442\u0441\u044F \u0437\u0430\u044F\u0432\u043A\u0438 \u0438 \u043C\u044D\u0442\u0447\u0438"))
+            : visible.map(n => {
+                const from = peerFrom(n);
+                let badge = 'user-plus', bbg = 'var(--pk)', text = null;
+                if (n.type === 'application')
+                    text = React.createElement(React.Fragment, null,
+                        React.createElement("span", { className: 'notif-name', onClick: () => setViewUser(from) }, from.nickname),
+                        " \u0445\u043E\u0447\u0435\u0442 \u0432 \u0442\u0432\u043E\u0439 \u043E\u0442\u0440\u044F\u0434 (",
+                        n.listingGame,
+                        ")");
+                if (n.type === 'like') {
+                    badge = 'heart-filled';
+                    bbg = 'var(--purple)';
+                    text = React.createElement(React.Fragment, null,
+                        React.createElement("span", { className: 'notif-name', onClick: () => setViewUser(from) }, from.nickname),
+                        " \u043B\u0430\u0439\u043A\u043D\u0443\u043B \u0442\u0435\u0431\u044F \u0432 \u043F\u043E\u0438\u0441\u043A\u0435");
+                }
+                if (n.type === 'match') {
+                    badge = 'confetti';
+                    bbg = 'var(--green)';
+                    text = React.createElement(React.Fragment, null,
+                        "\u041C\u044D\u0442\u0447 \u0441 ",
+                        React.createElement("span", { className: 'notif-name', onClick: () => setViewUser(from) }, from.nickname),
+                        "! \uD83C\uDF89");
+                }
+                const isUnread = !n.read;
+                return (React.createElement("div", { key: n.id, className: 'notif-row' + (isUnread ? ' unread' : '') },
+                    React.createElement("div", { className: 'notif-icon', style: { background: 'transparent', padding: 0 }, onClick: () => setViewUser(from) },
+                        React.createElement(Avatar, { user: from, size: 44, radius: 13 }),
+                        React.createElement("div", { style: { position: 'absolute', bottom: -3, right: -3, width: 18, height: 18, borderRadius: 6, background: bbg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--card)' } },
+                            React.createElement(Icon, { n: badge, style: { fontSize: 10, color: '#fff' } }))),
+                    React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                        React.createElement("div", { style: { fontSize: 14, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 10, paddingRight: 24 } }, text),
+                        React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 } },
+                            React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => setViewUser(from) }, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C"),
+                            n.type === 'application' && !n.accepted && React.createElement(React.Fragment, null,
+                                React.createElement("button", { className: 'btn btn-p btn-sm', onClick: () => accept(n) }, "\u041F\u0440\u0438\u043D\u044F\u0442\u044C"),
+                                React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => dismiss(n.id) }, "\u041E\u0442\u043A\u043B\u043E\u043D\u0438\u0442\u044C")),
+                            n.type === 'application' && n.accepted && React.createElement("button", { className: 'btn btn-p btn-sm', onClick: () => startChat(from) }, "\u0427\u0430\u0442"),
+                            n.type === 'like' && !n.likedback && React.createElement(React.Fragment, null,
+                                React.createElement("button", { className: 'btn btn-p btn-sm', onClick: () => likeback(n) }, "\u041B\u0430\u0439\u043A \u0432 \u043E\u0442\u0432\u0435\u0442"),
+                                React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => dismiss(n.id) }, "\u041F\u0440\u043E\u043F\u0443\u0441\u0442\u0438\u0442\u044C")),
+                            n.type === 'like' && n.likedback && React.createElement("button", { className: 'btn btn-p btn-sm', onClick: () => startChat(from) }, "\u0427\u0430\u0442"),
+                            n.type === 'match' && React.createElement("button", { className: 'btn btn-p btn-sm', onClick: () => { ensureChat(me, from, chats, setChats); goChat && goChat(n.fromUserId); } }, "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0447\u0430\u0442")),
+                        React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted2)', marginTop: 6 } }, fmtAgo(n.ts))),
+                    React.createElement("button", { className: 'notif-x', onClick: () => dismiss(n.id), title: '\u0421\u043A\u0440\u044B\u0442\u044C' },
+                        React.createElement(Icon, { n: 'x', style: { fontSize: 14 } }))));
+            }),
+        viewUser && React.createElement(UserModal, { user: viewUser, onClose: () => setViewUser(null), onChat: () => startChat(viewUser) })));
+}
+/* ── PROFILE ── */
+function ProfileScreen({ me, setMe, onLogout, onDelete, chats, mobile }) {
+    const [editing, setEditing] = useState(false);
+    const [confirmDel, setConfirmDel] = useState(false);
+    const [form, setForm] = useState({ nickname: me.nickname, avatar: me.avatar || null, games: me.games || [], axes: (me.radarAxes || DA).map(a => ({ ...a })), vals: me.radarValues || (me.radarAxes || DA).map(a => { var _a; return ((_a = me.radar) === null || _a === void 0 ? void 0 : _a[a.key]) || 5; }) });
+    const save = () => {
+        if (!form.nickname.trim())
+            return;
+        const upd = { ...me, nickname: form.nickname.trim(), avatar: form.avatar, games: form.games, radarAxes: form.axes, radarValues: form.vals, radar: Object.fromEntries(form.axes.map((a, i) => [a.key, form.vals[i]])) };
+        setMe(upd);
+        ls.set('gv:me', upd);
+        ls.set('gv:u:' + me.id, upd);
+        setEditing(false);
+    };
+    const axes = me.radarAxes || DA;
+    const vals = me.radarValues || axes.map(a => { var _a; return ((_a = me.radar) === null || _a === void 0 ? void 0 : _a[a.key]) || 5; });
+    const gamesCount = (me.games || []).length;
+    const rolesCount = (me.games || []).reduce((s, g) => { var _a; return s + (((_a = g.roles) === null || _a === void 0 ? void 0 : _a.length) || 0); }, 0);
+    const chatCount = (chats || []).length;
+    if (editing)
+        return (React.createElement("div", { className: 'content-wrap' },
+            React.createElement("div", { className: 'ph' },
+                React.createElement("div", { className: 'ph-t' }, "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C"),
+                React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => setEditing(false) }, "\u041E\u0442\u043C\u0435\u043D\u0430")),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'flex-start', gap: 18, marginBottom: 22 } },
+                React.createElement(AvatarUpload, { user: { ...me, nickname: form.nickname, avatar: form.avatar }, size: 72, radius: 20, onUpload: s => setForm(f => ({ ...f, avatar: s })), hint: true }),
+                React.createElement("div", { style: { flex: 1 } },
+                    React.createElement("label", { className: 'fl' }, "\u041D\u0438\u043A\u043D\u0435\u0439\u043C"),
+                    React.createElement("input", { value: form.nickname, onChange: e => setForm(f => ({ ...f, nickname: e.target.value })) }))),
+            React.createElement("div", { className: 'sl' }, "\u0438\u0433\u0440\u044B \u0438 \u0440\u043E\u043B\u0438"),
+            form.games.map((g, i) => React.createElement("div", { key: i, className: 'card2', style: { marginBottom: 10 } },
+                React.createElement("div", { style: { display: 'flex', gap: 8, marginBottom: 10 } },
+                    React.createElement("select", { value: g.game, onChange: e => { const ng = [...form.games]; ng[i] = { ...ng[i], game: e.target.value, roles: [] }; setForm(f => ({ ...f, games: ng })); }, style: { flex: 1 } }, GAMES.map(gm => React.createElement("option", { key: gm }, gm))),
+                    form.games.length > 1 && React.createElement("button", { className: 'btn btn-g btn-sm', style: { padding: '8px 11px' }, onClick: () => setForm(f => ({ ...f, games: f.games.filter((_, j) => j !== i) })) },
+                        React.createElement(Icon, { n: 'trash' }))),
+                React.createElement("label", { className: 'fl' }, "\u0420\u043E\u043B\u0438"),
+                React.createElement(RolesPicker, { game: g.game, selected: g.roles, onChange: v => { const ng = [...form.games]; ng[i] = { ...ng[i], roles: v }; setForm(f => ({ ...f, games: ng })); } }))),
+            React.createElement("button", { className: 'btn btn-g btn-sm btn-fw', style: { marginBottom: 22 }, onClick: () => setForm(f => ({ ...f, games: [...f.games, { game: 'CS2', roles: [] }] })) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438\u0433\u0440\u0443"),
+            React.createElement("div", { className: 'sl' }, "\u0440\u0430\u0434\u0430\u0440 \u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440\u0430"),
+            React.createElement("div", { style: { display: 'flex', gap: 16, marginBottom: 14, alignItems: 'center' } },
+                React.createElement(RadarSvg, { axes: form.axes, values: form.vals, size: 96 }),
+                React.createElement("div", { style: { flex: 1 } },
+                    React.createElement(RadarSliders, { axes: form.axes, values: form.vals, onChange: v => setForm(f => ({ ...f, vals: v })) }))),
+            React.createElement("div", { className: 'card2', style: { marginBottom: 22 } },
+                React.createElement(AxisEditor, { axes: form.axes, onChange: a => setForm(f => ({ ...f, axes: a })) })),
+            React.createElement("button", { className: 'btn btn-p btn-fw', onClick: save }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F")));
+    return (React.createElement("div", { className: 'content-wrap' + (mobile ? ' prof-compact' : '') },
+        React.createElement("div", { className: 'ph' },
+            React.createElement("div", { className: 'ph-t' }, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C"),
+            React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => setEditing(true) }, "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C")),
+        React.createElement("div", { className: 'prof-hero' },
+            React.createElement(Avatar, { user: me, size: mobile ? 60 : 72, radius: mobile ? 18 : 21 }),
+            React.createElement("div", { style: { flex: 1, minWidth: 0, position: 'relative', zIndex: 1 } },
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 700, fontFamily: 'var(--sans)', letterSpacing: '-.01em' } }, me.nickname),
+                React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted2)', letterSpacing: '.06em', marginTop: 4 } },
+                    "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A \u0441 ",
+                    new Date(me.createdAt).toLocaleDateString('ru')),
+                React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--green)', marginTop: 4 } }, "\u25CF \u043E\u043D\u043B\u0430\u0439\u043D"))),
+        React.createElement("div", { style: { display: 'flex', gap: 10, marginBottom: 16 } },
+            React.createElement("div", { className: 'stat-card' },
+                React.createElement("div", { className: 'stat-val' }, gamesCount),
+                React.createElement("div", { className: 'stat-label' }, "\u0438\u0433\u0440")),
+            React.createElement("div", { className: 'stat-card' },
+                React.createElement("div", { className: 'stat-val' }, rolesCount),
+                React.createElement("div", { className: 'stat-label' }, "\u0440\u043E\u043B\u0435\u0439")),
+            React.createElement("div", { className: 'stat-card' },
+                React.createElement("div", { className: 'stat-val' }, chatCount),
+                React.createElement("div", { className: 'stat-label' }, "\u0447\u0430\u0442\u043E\u0432"))),
+        React.createElement("div", { className: 'card', style: { marginBottom: 14 } },
+            React.createElement("div", { className: 'sl' }, "\u0438\u0433\u0440\u044B \u0438 \u0440\u043E\u043B\u0438"),
+            gamesCount === 0 && React.createElement("span", { style: { fontSize: 12, color: 'var(--muted2)', fontFamily: 'var(--mono)' } }, "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u044B"),
+            (me.games || []).map((g, i) => {
+                var _a;
+                return (React.createElement("div", { key: i, style: { marginBottom: i < (me.games.length - 1) ? 16 : 0 } },
+                    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 } },
+                        React.createElement("span", { className: 'tag tg' }, g.game)),
+                    ((_a = g.roles) === null || _a === void 0 ? void 0 : _a.length) > 0
+                        ? React.createElement("div", { style: { display: 'flex', gap: 5, flexWrap: 'wrap', paddingLeft: 2 } }, g.roles.map(r => React.createElement("span", { key: r, className: 'tag tr' }, r)))
+                        : React.createElement("span", { style: { fontSize: 12, color: 'var(--muted2)', fontFamily: 'var(--mono)', paddingLeft: 2 } }, "\u0440\u043E\u043B\u0438 \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u044B")));
+            })),
+        React.createElement("div", { className: 'card', style: { marginBottom: 18 } },
+            React.createElement("div", { className: 'sl' }, "\u0440\u0430\u0434\u0430\u0440 \u0445\u0430\u0440\u0430\u043A\u0442\u0435\u0440\u0430"),
+            React.createElement("div", { style: { display: 'flex', gap: 16, alignItems: 'center' } },
+                React.createElement(RadarSvg, { axes: axes, values: vals, size: mobile ? 84 : 96 }),
+                React.createElement("div", { style: { flex: 1 } }, axes.map((ax, i) => React.createElement("div", { key: ax.key, className: 'rb' },
+                    React.createElement("div", { className: 'rbn', style: { color: ax.color } }, ax.label),
+                    React.createElement("div", { className: 'rbt' },
+                        React.createElement("div", { className: 'rbf', style: { width: vals[i] * 10 + '%', background: ax.color } })),
+                    React.createElement("div", { className: 'rbv', style: { color: ax.color } }, vals[i])))))),
+        React.createElement("div", { style: { display: 'flex', gap: 8 } },
+            React.createElement("button", { className: 'btn btn-g', style: { flex: 1 }, onClick: onLogout }, "\u0412\u044B\u0439\u0442\u0438"),
+            React.createElement("button", { className: 'btn btn-d', style: { flex: 1 }, onClick: () => setConfirmDel(true) }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0430\u043A\u043A\u0430\u0443\u043D\u0442")),
+        confirmDel && React.createElement(Modal, { title: '\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0430\u043A\u043A\u0430\u0443\u043D\u0442?', onClose: () => setConfirmDel(false), maxW: 400 },
+            React.createElement("p", { style: { fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20 } }, "\u042D\u0442\u043E \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043D\u0435\u043E\u0431\u0440\u0430\u0442\u0438\u043C\u043E. \u041F\u0440\u043E\u0444\u0438\u043B\u044C, \u0447\u0430\u0442\u044B, \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u044F \u0438 \u0438\u0441\u0442\u043E\u0440\u0438\u044F \u043B\u0430\u0439\u043A\u043E\u0432 \u0431\u0443\u0434\u0443\u0442 \u0443\u0434\u0430\u043B\u0435\u043D\u044B \u043D\u0430\u0432\u0441\u0435\u0433\u0434\u0430."),
+            React.createElement("div", { style: { display: 'flex', gap: 8 } },
+                React.createElement("button", { className: 'btn btn-g', style: { flex: 1 }, onClick: () => setConfirmDel(false) }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                React.createElement("button", { className: 'btn btn-d', style: { flex: 1, borderColor: 'var(--pk)' }, onClick: onDelete }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043D\u0430\u0432\u0441\u0435\u0433\u0434\u0430")))));
+}
+/* ── NAV ── */
+const NAV = [
+    { key: 'chats', icon: 'message-2', label: 'чаты' },
+    { key: 'board', icon: 'clipboard-list', label: 'доска' },
+    { key: 'find', icon: 'users', label: 'поиск', dot: true },
+    { key: 'notifs', icon: 'bell', label: 'события' },
+    { key: 'profile', icon: 'user', label: 'профиль' },
+];
+const TITLES = { chats: 'Чаты', board: 'Доска объявлений', find: 'Поиск тиммейтов', notifs: 'Уведомления', profile: 'Профиль' };
+/* ── ROOT ── */
+function App() {
+    const [auth, setAuth] = useState('loading');
+    const [me, setMe] = useState(null);
+    const [tab, setTab] = useState('board');
+    const [users, setUsers] = useState({});
+    const [listings, setListings] = useState([]);
+    const [chats, setChats] = useState([]);
+    const [notifs, setNotifs] = useState([]);
+    const [openChatId, setOpenChatId] = useState(null);
+    const [profileUser, setProfileUser] = useState(null);
+    // PREVIEW=true показывает панель «Десктоп/Мобилка» + рамку телефона (для просмотра обеих версий).
+    // В реальном деплое (без ?preview) панели нет: версия выбирается сама по ширине экрана.
+    const PREVIEW = (typeof window !== 'undefined') && (/[?&]preview\b/.test(window.location.search) || /preview/i.test(window.location.pathname));
+    const detectMobile = () => {
+        if (typeof window === 'undefined')
+            return false;
+        const w = window.innerWidth;
+        if (w <= 768)
+            return true;
+        // большой телефон/ландшафт: трогабельный экран с грубым указателем и не очень широкий
+        const coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+        const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        return (coarse || touch) && w <= 1024;
+    };
+    const [vw, setVw] = useState(typeof window !== 'undefined' ? window.innerWidth : 1280);
+    const [pvMode, setPvMode] = useState(detectMobile() ? 'mobile' : 'desktop');
+    useEffect(() => {
+        if (PREVIEW)
+            return; // в превью режим выбирается кнопками
+        const onR = () => setVw(window.innerWidth);
+        window.addEventListener('resize', onR);
+        return () => window.removeEventListener('resize', onR);
+    }, [PREVIEW]);
+    const isMobile = PREVIEW ? (pvMode === 'mobile') : detectMobile();
+    const pingRef = useRef(null);
+    const pollRef = useRef(null);
+    const [tick, setTick] = useState(0);
+    useEffect(() => { onCacheChange = () => setTick(t => t + 1); initBackend(); return () => { onCacheChange = null; }; }, []);
+    useEffect(() => { if (me && auth === 'app')
+        loadAll(me); }, [tick]);
+    useEffect(() => { const saved = ls.get('gv:me'); if (saved) {
+        setMe(saved);
+        loadAll(saved);
+        setAuth('app');
+    }
+    else
+        setAuth('loggedOut'); }, []);
+    const loadAll = my => {
+        setChats(ls.get('gv:ch:' + my.id) || []);
+        setNotifs(ls.get('gv:no:' + my.id) || []);
+        setListings((ls.get('gv:li') || []).filter(l => l.status === 'active' && l.expiresAt > now()));
+        refreshUsers(my);
+    };
+    const refreshUsers = my => {
+        const all = {};
+        ls.list('gv:u:').forEach(k => { const u = ls.get(k); if (u)
+            all[u.id] = u; });
+        Object.keys(all).forEach(id => { all[id]._online = isOnline(id); });
+        if (my)
+            all[my.id] = { ...all[my.id] || my, _online: true };
+        setUsers(all);
+    };
+    useEffect(() => {
+        if (!me || auth !== 'app')
+            return;
+        pingOnline(me.id);
+        pingRef.current = setInterval(() => pingOnline(me.id), 28000);
+        pollRef.current = setInterval(async () => {
+            await refreshFromDB(); // подтянуть свежие данные из базы (новые анкеты, лайки, сообщения)
+            setChats(ls.get('gv:ch:' + me.id) || []);
+            setNotifs(ls.get('gv:no:' + me.id) || []);
+            setListings((ls.get('gv:li') || []).filter(l => l.status === 'active' && l.expiresAt > now()));
+            refreshUsers(me);
+        }, 5000);
+        return () => { clearInterval(pingRef.current); clearInterval(pollRef.current); };
+    }, [me === null || me === void 0 ? void 0 : me.id, auth]);
+    const handleLogin = user => { setMe(user); loadAll(user); setAuth('app'); setTab('board'); };
+    const handleLogout = () => { ls.del('gv:me'); setMe(null); setAuth('loggedOut'); };
+    const handleDelete = () => {
+        if (!me)
+            return;
+        ls.del('gv:u:' + me.id);
+        ls.del('gv:me');
+        ls.del('gv:on:' + me.id);
+        ls.del('gv:ch:' + me.id);
+        ls.del('gv:no:' + me.id);
+        ls.del('gv:lk:' + me.id);
+        // убрать мои объявления с общей доски
+        const li = (ls.get('gv:li') || []).filter(l => l.userId !== me.id);
+        ls.set('gv:li', li);
+        setMe(null);
+        setChats([]);
+        setNotifs([]);
+        setListings([]);
+        setUsers({});
+        setAuth('loggedOut');
+    };
+    const goChat = id => { setOpenChatId(id); setTab('chats'); };
+    const unread = notifs.filter(n => !n.read && !n.dismissed).length;
+    const startChatGlobal = target => { ensureChat(me, target, chats, setChats); goChat && goChat(target.id); };
+    const renderContent = (mobile = false) => {
+        switch (tab) {
+            case 'chats': return React.createElement(ChatsScreen, { me: me, users: users, chats: chats, setChats: setChats, openChatId: openChatId, clearOpenChat: () => setOpenChatId(null), mobile: mobile, startChat: startChatGlobal });
+            case 'board': return React.createElement(BoardScreen, { me: me, users: users, listings: listings, setListings: setListings, chats: chats, setChats: setChats, goChat: goChat });
+            case 'find': return React.createElement(FindScreen, { me: me, users: users, chats: chats, setChats: setChats, goChat: goChat });
+            case 'notifs': return React.createElement(NotifsScreen, { me: me, users: users, notifs: notifs, setNotifs: setNotifs, chats: chats, setChats: setChats, goChat: goChat });
+            case 'profile': return React.createElement(ProfileScreen, { me: me, setMe: setMe, onLogout: handleLogout, onDelete: handleDelete, chats: chats, mobile: mobile });
+        }
+    };
+    if (!CONFIGURED)
+        return (React.createElement("div", { className: 'ob' },
+            React.createElement("div", { className: 'ob-b', style: { maxWidth: 520 } },
+                React.createElement("div", { className: 'logo', style: { fontSize: 20, marginBottom: 8 } }, "\u0413\u0413\u0412\u041F"),
+                React.createElement("div", { className: 'ob-sub', style: { marginBottom: 20 } }, "\u0411\u042D\u041A\u0415\u041D\u0414-\u0412\u0415\u0420\u0421\u0418\u042F \u00B7 \u041D\u0423\u0416\u041D\u0410 \u041D\u0410\u0421\u0422\u0420\u041E\u0419\u041A\u0410"),
+                React.createElement("div", { style: { fontSize: 14, color: 'var(--white)', lineHeight: 1.6, marginBottom: 14, fontFamily: 'var(--sans)', fontWeight: 600 } }, "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u0443\u044E \u0431\u0430\u0437\u0443 Supabase"),
+                React.createElement("div", { style: { fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.8 } },
+                    "1. \u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u0443\u0439\u0441\u044F \u043D\u0430 ",
+                    React.createElement("span", { style: { color: 'var(--cy-soft)' } }, "supabase.com"),
+                    ", \u0441\u043E\u0437\u0434\u0430\u0439 \u043F\u0440\u043E\u0435\u043A\u0442.",
+                    React.createElement("br", null),
+                    "2. \u0412 ",
+                    React.createElement("b", { style: { color: '#fff' } }, "SQL Editor"),
+                    " \u0432\u044B\u043F\u043E\u043B\u043D\u0438 \u0441\u043A\u0440\u0438\u043F\u0442 \u0438\u0437 ",
+                    React.createElement("b", { style: { color: '#fff' } }, "\u041A\u0410\u041A_\u0417\u0410\u041F\u0423\u0421\u0422\u0418\u0422\u042C.md"),
+                    ".",
+                    React.createElement("br", null),
+                    "3. \u0412 ",
+                    React.createElement("b", { style: { color: '#fff' } }, "Settings \u2192 API"),
+                    " \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439 ",
+                    React.createElement("b", { style: { color: '#fff' } }, "Project URL"),
+                    " \u0438 ",
+                    React.createElement("b", { style: { color: '#fff' } }, "anon key"),
+                    ".",
+                    React.createElement("br", null),
+                    "4. \u0412\u0441\u0442\u0430\u0432\u044C \u0438\u0445 \u0432 \u043D\u0430\u0447\u0430\u043B\u043E \u0444\u0430\u0439\u043B\u0430 (SUPABASE_URL \u0438 SUPABASE_ANON_KEY) \u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438."),
+                React.createElement("div", { style: { marginTop: 18, padding: 14, borderRadius: 12, background: 'var(--card2)', border: '1px solid var(--bd)', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 } }, "\u041F\u043E\u043B\u043D\u0430\u044F \u043F\u043E\u0448\u0430\u0433\u043E\u0432\u0430\u044F \u0438\u043D\u0441\u0442\u0440\u0443\u043A\u0446\u0438\u044F \u2014 \u0432 \u0444\u0430\u0439\u043B\u0435 \u041A\u0410\u041A_\u0417\u0410\u041F\u0423\u0421\u0422\u0418\u0422\u042C.md \u0438\u0437 \u0430\u0440\u0445\u0438\u0432\u0430."))));
+    if (auth === 'loading')
+        return React.createElement("div", { style: { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', color: 'var(--muted2)', fontSize: 12, letterSpacing: '.12em' } }, "\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430...");
+    if (auth === 'loggedOut')
+        return React.createElement(LoginScreen, { onLogin: handleLogin, onRegister: () => setAuth('onboarding') });
+    if (auth === 'onboarding')
+        return React.createElement(Onboarding, { onDone: u => { setMe(u); loadAll(u); setAuth('app'); setTab('board'); }, onBack: () => setAuth('loggedOut') });
+    const PvBar = () => (PREVIEW ?
+        React.createElement("div", { className: 'pv-bar' },
+            React.createElement("span", { className: 'pv-lbl' }, "\u041F\u0420\u0415\u0414\u041F\u0420\u041E\u0421\u041C\u041E\u0422\u0420:"),
+            React.createElement("button", { className: 'pv-btn' + (pvMode === 'desktop' ? ' on' : ''), onClick: () => setPvMode('desktop') }, "\u0414\u0435\u0441\u043A\u0442\u043E\u043F"),
+            React.createElement("button", { className: 'pv-btn' + (pvMode === 'mobile' ? ' on' : ''), onClick: () => setPvMode('mobile') }, "\u041C\u043E\u0431\u0438\u043B\u043A\u0430")) : null);
+    /* ── MOBILE ── (в превью — в рамке телефона; в реале — на весь экран)
+       ВАЖНО: это обычный JSX в дереве App, а не вложенный компонент —
+       иначе React пересоздавал бы поддерево на каждый рендер и сбрасывал
+       состояние экранов (из-за этого раньше «вылетали» доска/поиск). */
+    const chatFull = tab === 'chats';
+    const mobileView = (React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' } },
+        !chatFull && React.createElement("div", { style: { display: 'flex', height: 56, padding: '0 16px', alignItems: 'center', borderBottom: '1px solid var(--bd)', background: 'var(--dark2)', flexShrink: 0 } },
+            React.createElement("div", { className: 'logo', style: { fontSize: 15 } }, "\u0413\u0413\u0412\u041F")),
+        React.createElement("div", { style: { flex: 1, overflow: chatFull ? 'hidden' : 'auto', padding: chatFull ? 0 : '16px 15px 6px', minHeight: 0 } }, renderContent(true)),
+        React.createElement("div", { className: 'mnav' }, NAV.map(n => {
+            const on = tab === n.key;
+            const showDot = (n.key === 'notifs' && unread > 0) || (n.dot && !on);
+            return (React.createElement("button", { key: n.key, className: 'mnav-i' + (on ? ' on' : ''), onClick: () => { setTab(n.key); if (n.key !== 'chats')
+                    setOpenChatId(null); } },
+                React.createElement("span", { className: 'mnav-ic' },
+                    React.createElement(Icon, { n: n.icon, style: { fontSize: 23 } }),
+                    showDot && React.createElement("span", { className: 'mnav-dot' })),
+                on && React.createElement("span", { className: 'mnav-lbl' }, n.label)));
+        }))));
+    if (isMobile) {
+        if (!PREVIEW)
+            return React.createElement("div", { className: 'mobile-root' },
+                mobileView,
+                profileUser && React.createElement(UserModal, { user: profileUser, onClose: () => setProfileUser(null), onChat: () => { startChatGlobal(profileUser); setProfileUser(null); } }));
+        return (React.createElement("div", { style: { height: '100vh', display: 'flex', flexDirection: 'column', background: '#050507', overflow: 'hidden' } },
+            React.createElement(PvBar, null),
+            React.createElement("div", { style: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '20px 0', overflowY: 'auto' } },
+                React.createElement("div", { style: { width: 390, height: 800, borderRadius: 42, overflow: 'hidden', border: '1.5px solid #2a2a34', boxShadow: '0 24px 80px rgba(0,0,0,.9)', background: 'var(--dark)', display: 'flex', flexDirection: 'column', flexShrink: 0 } }, mobileView)),
+            profileUser && React.createElement(UserModal, { user: profileUser, onClose: () => setProfileUser(null), onChat: () => { startChatGlobal(profileUser); setProfileUser(null); } })));
+    }
+    /* ── DESKTOP ── */
+    return (React.createElement("div", { style: { height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' } },
+        React.createElement(PvBar, null),
+        React.createElement("div", { style: { flex: 1, overflow: 'hidden', display: 'flex' } },
+            React.createElement("div", { className: 'app-shell', style: { flex: 1 } },
+                React.createElement("aside", { className: 'sb' },
+                    React.createElement("div", { className: 'sb-head' },
+                        React.createElement("div", { className: 'logo', style: { fontSize: 17 } }, "\u0413\u0413\u0412\u041F"),
+                        React.createElement("div", { className: 'sb-tagline' }, "\u043F\u043E\u0438\u0441\u043A \u0442\u0438\u043C\u043C\u0435\u0439\u0442\u043E\u0432")),
+                    React.createElement("nav", { className: 'sb-nav' }, NAV.map(n => (React.createElement("button", { key: n.key, className: 'nb' + (tab === n.key ? ' on' : ''), onClick: () => { setTab(n.key); if (n.key !== 'chats')
+                            setOpenChatId(null); } },
+                        React.createElement("span", { className: 'nb-ic' },
+                            React.createElement(Icon, { n: n.icon, style: { fontSize: 19 } })),
+                        n.label,
+                        n.key === 'notifs' && unread > 0 && React.createElement("span", { className: 'nb-badge' }, unread),
+                        n.dot && React.createElement("span", { className: 'nb-dot' }))))),
+                    React.createElement("div", { className: 'sb-cta', onClick: () => setTab('find') },
+                        React.createElement("div", { className: 'sb-cta-glow' }),
+                        React.createElement("div", { style: { position: 'relative', zIndex: 1 } },
+                            React.createElement("div", { className: 'sb-cta-ic' },
+                                React.createElement(Icon, { n: 'cards' })),
+                            React.createElement("div", { className: 'sb-cta-t' }, "\u0414\u0440\u043E\u043F \u0442\u0438\u043C\u043C\u0435\u0439\u0442\u043E\u0432"),
+                            React.createElement("div", { className: 'sb-cta-s' }, "\u041E\u0442\u043A\u0440\u043E\u0439 \u043F\u043E\u0434\u0431\u043E\u0440\u043A\u0443 \u0438\u0433\u0440\u043E\u043A\u043E\u0432 \u0438 \u043D\u0430\u0439\u0434\u0438 \u043C\u044D\u0442\u0447"),
+                            React.createElement("div", { className: 'sb-cta-btn' },
+                                "\u041E\u0442\u043A\u0440\u044B\u0442\u044C ",
+                                React.createElement(Icon, { n: 'arrow-right', style: { fontSize: 13 } }))))),
+                React.createElement("div", { className: 'main-col' },
+                    React.createElement("div", { className: 'desk-hdr' },
+                        React.createElement("div", { className: 'desk-hdr-title' },
+                            React.createElement("span", { className: 'tdot' }),
+                            TITLES[tab] || ''),
+                        React.createElement("div", { className: 'desk-hdr-right' },
+                            unread > 0 && React.createElement("button", { className: 'btn btn-g btn-sm', onClick: () => setTab('notifs') },
+                                React.createElement(Icon, { n: 'bell' }),
+                                " ",
+                                React.createElement("span", { className: 'badge' }, unread)),
+                            tab !== 'profile' && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '7px 13px', borderRadius: 12, cursor: 'pointer', transition: 'background .15s', background: 'var(--card)', border: '1px solid var(--bd)' }, onClick: () => setTab('profile'), onMouseEnter: e => e.currentTarget.style.background = 'var(--card2)', onMouseLeave: e => e.currentTarget.style.background = 'var(--card)' },
+                                React.createElement(Avatar, { user: me, size: 30, radius: 9 }),
+                                React.createElement("div", null,
+                                    React.createElement("div", { style: { fontSize: 13, fontWeight: 600, lineHeight: 1.2 } }, me.nickname),
+                                    React.createElement("div", { style: { fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 500, color: 'var(--green)', marginTop: 2 } }, "\u25CF \u043E\u043D\u043B\u0430\u0439\u043D"))))),
+                    React.createElement("div", { className: 'content-area' + (tab === 'chats' ? ' no-pad' : '') }, renderContent())))),
+        profileUser && React.createElement(UserModal, { user: profileUser, onClose: () => setProfileUser(null), onChat: () => { startChatGlobal(profileUser); setProfileUser(null); } })));
+}
 // Сообщаем VK, что приложение готово (нужно для VK Mini Apps; вне VK — просто игнорируется)
-try{ if(window.vkBridge&&window.vkBridge.send){ window.vkBridge.send('VKWebAppInit',{}); } }catch(e){}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+try {
+    if (window.vkBridge && window.vkBridge.send) {
+        window.vkBridge.send('VKWebAppInit', {});
+    }
+}
+catch (e) { }
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 // убрать загрузочный экран, когда приложение смонтировалось
-function hideBoot(){ const b=document.getElementById('boot'); if(b){ b.style.transition='opacity .3s'; b.style.opacity='0'; setTimeout(()=>b.remove(),320); } }
-requestAnimationFrame(()=>setTimeout(hideBoot,80));
+function hideBoot() { const b = document.getElementById('boot'); if (b) {
+    b.style.transition = 'opacity .3s';
+    b.style.opacity = '0';
+    setTimeout(() => b.remove(), 320);
+} }
+requestAnimationFrame(() => setTimeout(hideBoot, 80));
 // страховка: в любом случае спрятать через 12 сек, даже если что-то пошло не так
-setTimeout(hideBoot,12000);
+setTimeout(hideBoot, 12000);
+
 </script>
 </body>
 </html>

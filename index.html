@@ -405,7 +405,7 @@ const GAMES=Object.keys(GAME_ROLES_DATA);
 
 /* ── STORAGE ── */
 /* ════ БЭКЕНД: данные в Supabase (общие, realtime). Настройка — в КАК_ЗАПУСТИТЬ.md. ════ */
-const SUPABASE_URL = 'https://kiicfzxhcmkoiqwjmisw.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://kiicfzxhcmkoiqwjmisw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpaWNmenhoY21rb2lxd2ptaXN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTI4NzEsImV4cCI6MjA5NjU2ODg3MX0.juLdhHBKpYKOIUrJmxoP-4a2vhtY9T_zN0qeG5OveuI';
 const CONFIGURED = !/ВСТАВЬ_СЮДА/.test(SUPABASE_URL+SUPABASE_ANON_KEY);
 const sb = CONFIGURED ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;

@@ -485,6 +485,41 @@ async function writeKV(k, v, attempt) {
             setTimeout(() => writeKV(k, v, attempt + 1), 1200);
     }
 }
+// прочитать СВЕЖЕЕ значение ключа прямо из базы (не из кэша)
+async function freshGet(k) {
+    if (!sb)
+        return cache.has(k) ? cache.get(k) : null;
+    try {
+        const { data, error } = await sb.from('kv').select('value').eq('key', k).maybeSingle();
+        if (error) {
+            console.warn('freshGet', k, error.message);
+            return cache.has(k) ? cache.get(k) : null;
+        }
+        return data ? data.value : null;
+    }
+    catch (e) {
+        return cache.has(k) ? cache.get(k) : null;
+    }
+}
+// БЕЗОПАСНОЕ добавление элемента в массив-ключ (notifs/chats): читаем свежее из базы,
+// добавляем, пишем обратно — чтобы два устройства не затирали данные друг друга.
+async function appendKV(k, item, opts) {
+    opts = opts || {};
+    const fresh = (await freshGet(k)) || [];
+    const arr = Array.isArray(fresh) ? fresh.slice() : [];
+    // дедуп по id, если просили
+    if (opts.dedupeId && arr.some(x => x && x.id === item.id)) {
+        return;
+    }
+    // для чатов — не добавлять дубль по chat id
+    if (opts.dedupeChatId && arr.some(x => x && x.id === item.id)) {
+        return;
+    }
+    const next = opts.prepend ? [item, ...arr] : [...arr, item];
+    cache.set(k, next);
+    notifyChange();
+    writeKV(k, next);
+}
 async function initBackend() {
     if (!sb)
         return;
@@ -945,9 +980,8 @@ function ensureChat(me, target, chats, setChats) {
     const upd = [...chats, nc];
     setChats(upd);
     ls.set('gv:ch:' + me.id, upd);
-    const tc = ls.get('gv:ch:' + target.id) || [];
-    if (!tc.find(c => c.id === cid))
-        ls.set('gv:ch:' + target.id, [...tc, nc]);
+    // у собеседника добавляем чат append-safe (свежее из базы, без затирания)
+    appendKV('gv:ch:' + target.id, nc, { dedupeChatId: true });
     return cid;
 }
 /* ── BOARD ── */
@@ -985,14 +1019,14 @@ function BoardScreen({ me, users, listings, setListings, chats, setChats, goChat
         setShowForm(false);
     };
     const del = id => { const fresh = ls.get('gv:li') || []; const upd = fresh.filter(l => l.id !== id); ls.set('gv:li', upd); setListings(upd.filter(l => l.status === 'active' && l.expiresAt > now())); };
-    const apply = l => {
-        const ex = ls.get('gv:no:' + l.userId) || [];
+    const apply = async (l) => {
+        const ex = (await freshGet('gv:no:' + l.userId)) || [];
         if (ex.some(n => n.type === 'application' && n.fromUserId === me.id && n.listingGame === l.game)) {
             alert('Ты уже отправил заявку на это объявление!');
             return;
         }
         const notif = { id: uid(), userId: l.userId, type: 'application', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, listingGame: l.game, read: false, ts: now() };
-        ls.set('gv:no:' + l.userId, [notif, ...ex]);
+        appendKV('gv:no:' + l.userId, notif, { prepend: true });
         alert('Заявка отправлена! Ответ придёт в «события».');
     };
     const startChat = target => { ensureChat(me, target, chats, setChats); goChat && goChat(target.id); };
@@ -1096,6 +1130,21 @@ function ChatsScreen({ me, users, chats, setChats, openChatId, clearOpenChat, mo
     const pollRef = useRef(null);
     const inpRef = useRef(null);
     const loadMsgs = useCallback(cid => { const m = ls.get('gv:ms:' + cid) || []; setMsgs(prev => ({ ...prev, [cid]: m })); }, []);
+    // подтянуть свежие сообщения активного чата прямо из базы (мерж со своими, без затирания)
+    const loadMsgsFresh = useCallback(async (cid) => {
+        if (typeof freshGet !== 'function')
+            return loadMsgs(cid);
+        const fresh = (await freshGet('gv:ms:' + cid)) || [];
+        cache.set('gv:ms:' + cid, fresh);
+        setMsgs(prev => {
+            const local = prev[cid] || [];
+            const byId = {};
+            [...fresh, ...local].forEach(m => { if (m && m.id)
+                byId[m.id] = m; });
+            const merged = Object.values(byId).sort((a, b) => a.ts - b.ts);
+            return { ...prev, [cid]: merged };
+        });
+    }, [loadMsgs]);
     // открыть конкретный чат по запросу извне (из доски/событий)
     useEffect(() => {
         if (openChatId) {
@@ -1109,11 +1158,11 @@ function ChatsScreen({ me, users, chats, setChats, openChatId, clearOpenChat, mo
     useEffect(() => {
         if (!activeId)
             return;
-        loadMsgs(activeId);
+        loadMsgsFresh(activeId);
         clearInterval(pollRef.current);
-        pollRef.current = setInterval(() => loadMsgs(activeId), 1500);
+        pollRef.current = setInterval(() => loadMsgsFresh(activeId), 2000);
         return () => clearInterval(pollRef.current);
-    }, [activeId, loadMsgs]);
+    }, [activeId, loadMsgsFresh]);
     // прокрутка только внутри области сообщений (не дёргает всю страницу)
     const prevActive = useRef(null);
     useEffect(() => {
@@ -1124,26 +1173,34 @@ function ChatsScreen({ me, users, chats, setChats, openChatId, clearOpenChat, mo
         prevActive.current = activeId;
         el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' });
     }, [msgs, activeId]);
-    const send = () => {
+    const send = async () => {
         var _a, _b;
         if (!input.trim() || !activeId)
             return;
         const m = { id: uid(), from: me.id, text: input.trim(), ts: now() };
-        const cur = [...(msgs[activeId] || []), m];
-        setMsgs(prev => ({ ...prev, [activeId]: cur }));
-        ls.set('gv:ms:' + activeId, cur);
+        setInput('');
+        (_a = inpRef.current) === null || _a === void 0 ? void 0 : _a.focus();
+        // оптимистично показываем своё сообщение сразу
+        setMsgs(prev => ({ ...prev, [activeId]: [...(prev[activeId] || []), m] }));
+        // append-safe: берём свежий список сообщений из базы, добавляем своё, пишем обратно
+        const fresh = (await freshGet('gv:ms:' + activeId)) || [];
+        if (!fresh.some(x => x && x.id === m.id)) {
+            const merged = [...fresh, m].sort((a, b) => a.ts - b.ts);
+            cache.set('gv:ms:' + activeId, merged);
+            setMsgs(prev => ({ ...prev, [activeId]: merged }));
+            writeKV('gv:ms:' + activeId, merged);
+        }
+        // обновляем превью чата у себя и у собеседника
         const upd = chats.map(c => c.id === activeId ? { ...c, lastMsg: m.text, lastTs: m.ts } : c);
         setChats(upd);
         ls.set('gv:ch:' + me.id, upd);
-        // зеркалим последнее сообщение и собеседнику
         const ch = chats.find(c => c.id === activeId);
-        const oid = (_a = ch === null || ch === void 0 ? void 0 : ch.participants) === null || _a === void 0 ? void 0 : _a.find(p => p !== me.id);
+        const oid = (_b = ch === null || ch === void 0 ? void 0 : ch.participants) === null || _b === void 0 ? void 0 : _b.find(p => p !== me.id);
         if (oid) {
-            const tc = (ls.get('gv:ch:' + oid) || []).map(c => c.id === activeId ? { ...c, lastMsg: m.text, lastTs: m.ts } : c);
-            ls.set('gv:ch:' + oid, tc);
+            const tc = ((await freshGet('gv:ch:' + oid)) || []).map(c => c.id === activeId ? { ...c, lastMsg: m.text, lastTs: m.ts } : c);
+            cache.set('gv:ch:' + oid, tc);
+            writeKV('gv:ch:' + oid, tc);
         }
-        setInput('');
-        (_b = inpRef.current) === null || _b === void 0 ? void 0 : _b.focus();
     };
     // имя/аватар собеседника: live-юзер -> снапшот в чате -> заглушка
     const getOther = chat => {
@@ -1263,23 +1320,23 @@ function FindScreen({ me, users, chats, setChats, goChat }) {
         setPhase('done');
     else
         setIdx(i => i + 1); };
-    const like = () => {
+    const like = async () => {
         const t = pool[idx];
         const mlk = ls.get('gv:lk:' + me.id) || [];
         if (!mlk.includes(t.id))
             ls.set('gv:lk:' + me.id, [...mlk, t.id]);
-        const tlk = ls.get('gv:lk:' + t.id) || [];
+        // проверяем СВЕЖИЙ список лайков цели из базы (а не устаревший кэш)
+        const tlk = (await freshGet('gv:lk:' + t.id)) || [];
         if (tlk.includes(me.id)) {
-            // взаимный лайк → мэтч: открываем чат и уведомляем обоих
+            // взаимный лайк → мэтч: открываем чат и уведомляем обоих (без затирания чужих уведомлений)
             ensureChat(me, t, chats, setChats);
-            const tn = ls.get('gv:no:' + t.id) || [];
-            ls.set('gv:no:' + t.id, [{ id: uid(), userId: t.id, type: 'match', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }, ...tn]);
+            appendKV('gv:no:' + t.id, { id: uid(), userId: t.id, type: 'match', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }, { prepend: true });
+            appendKV('gv:no:' + me.id, { id: uid(), userId: me.id, type: 'match', fromUserId: t.id, fromName: t.nickname, fromAvatar: t.avatar || null, read: false, ts: now() }, { prepend: true });
             setMatched(t);
         }
         else {
-            // обычный лайк → уведомление другому игроку
-            const tn = ls.get('gv:no:' + t.id) || [];
-            ls.set('gv:no:' + t.id, [{ id: uid(), userId: t.id, type: 'like', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }, ...tn]);
+            // обычный лайк → уведомление другому игроку (append-safe)
+            appendKV('gv:no:' + t.id, { id: uid(), userId: t.id, type: 'like', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }, { prepend: true });
         }
         next();
     };
@@ -1403,7 +1460,7 @@ function NotifsScreen({ me, users, notifs, setNotifs, chats, setChats, goChat })
     }, []);
     const writeNotifs = upd => { ls.set('gv:no:' + me.id, upd); setNotifs(upd); };
     const accept = n => { const t = peerFrom(n); ensureChat(me, t, chats, setChats); writeNotifs((ls.get('gv:no:' + me.id) || []).map(x => x.id === n.id ? { ...x, accepted: true, read: true } : x)); goChat && goChat(n.fromUserId); };
-    const likeback = n => { const t = peerFrom(n); ensureChat(me, t, chats, setChats); const mn = { id: uid(), userId: n.fromUserId, type: 'match', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }; const tn = ls.get('gv:no:' + n.fromUserId) || []; ls.set('gv:no:' + n.fromUserId, [mn, ...tn]); writeNotifs((ls.get('gv:no:' + me.id) || []).map(x => x.id === n.id ? { ...x, likedback: true, read: true } : x)); };
+    const likeback = n => { const t = peerFrom(n); ensureChat(me, t, chats, setChats); appendKV('gv:no:' + n.fromUserId, { id: uid(), userId: n.fromUserId, type: 'match', fromUserId: me.id, fromName: me.nickname, fromAvatar: me.avatar || null, read: false, ts: now() }, { prepend: true }); writeNotifs((ls.get('gv:no:' + me.id) || []).map(x => x.id === n.id ? { ...x, likedback: true, read: true } : x)); };
     const dismiss = id => { writeNotifs((ls.get('gv:no:' + me.id) || []).map(x => x.id === id ? { ...x, dismissed: true, read: true } : x)); };
     const visible = notifs.filter(n => !n.dismissed);
     const unread = notifs.filter(n => !n.read && !n.dismissed).length;
